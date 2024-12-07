@@ -29,9 +29,9 @@ namespace Business.Concrete
             _bolumDal.Delete(bolum);
         }
 
-        public List<Bolum> GetById(int bolumId)
+        public Bolum GetById(int bolumId)
         {
-            return _bolumDal.GetAll(p=>p.Id==bolumId);
+            return _bolumDal.Get(p=>p.Id==bolumId);
         }
 
         public List<Bolum> GetList()

@@ -15,7 +15,10 @@ namespace Frontend1.Controllers
         {
             _logger = logger;
         }
-
+        [HttpGet]
+        [Route("Home/index")]
+        [Route("/")]
+        [Route("index")]
         public IActionResult Index()
         {
             return View();
@@ -26,16 +29,7 @@ namespace Frontend1.Controllers
             return View();
         }
 
-        [HttpPost]
-        [Route("/Home/YeniBolumEkle")]
-        public IActionResult YeniBolumEkle([FromBody] string bolumAdi)
-        {
-            BolumManager bolumManager = new BolumManager(new BolumDal());
-            Bolum bolum = new Bolum();
-            bolum.BolumAdi = bolumAdi;
-            bolumManager.Add(bolum);
-            return Ok();
-        }
+
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

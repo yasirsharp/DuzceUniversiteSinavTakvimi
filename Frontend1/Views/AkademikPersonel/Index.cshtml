@@ -1,0 +1,80 @@
+﻿@using Business.Concrete
+@using DataAccess.Concrete
+
+@{
+    ViewData["Title"] = "Akademik Personel Yönetimi";
+    AkademikPersonelManager akademikPersonelManager = new AkademikPersonelManager(new AkademikPersonelDal());
+    var list = akademikPersonelManager.GetList();
+    void getAllAkademikPersonel()
+    {
+        foreach (var item in list)
+        {
+            <tbody class="table-group-divider">
+                <tr>
+                    <th scope="row">@item.Id</th>
+                    <td>@item.Unvan</td>
+                    <td>@item.Ad</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm edit-btn" data-id="@item.Id" data-name="@item.Ad">Düzenle</button>
+                        <button class="btn btn-danger btn-sm delete-btn" data-id="@item.Id">Sil</button>
+                    </td>
+                </tr>
+            </tbody>
+        }
+    }
+}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>@ViewData["Title"]</h2>
+        <button id="addRowBtn" type="button" class="btn btn-secondary">Ekle</button>
+    </div>
+    <table class="table table-bordered mt-3" id="dataTable">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 20%;">Id</th>
+                <th>Unvan</th>
+                <th>Akademik Personel Adı</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        @{
+            getAllAkademikPersonel();
+        }
+        <tbody class="table-group-divider" style="display: none;" id="inputRow">
+            <tr>
+                <th scope="row"></th>
+                <td>
+                    <input type="text" id="unvan" class="form-control" />
+                </td>
+                <td>
+                    <input type="text" id="ad" class="form-control" />
+                </td>
+                <td>
+                    <button class="btn btn-secondary" id="submitBtn">
+                        + Ekle
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<!-- Toast container -->
+<div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3">
+    <div id="toast-container">
+        <!-- Toast items will be added here dynamically -->
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Sayfanın türüne göre entityName'i belirliyoruz
+            const entityName = 'AkademikPersonel'; // Bu sayfa için 'AkademikPersonel' nesnesi
+
+            initializeDeleteButtons(entityName);
+            initializeAddButton(entityName);
+            initializeEditButtons(entityName);
+        });
+    </script>
+}

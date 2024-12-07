@@ -10,6 +10,6 @@ namespace Entity.Concrete
     public class Ders : IEntity
     {
         public int Id { get; set; }
-        public string DersAdi { get; set; }
+        public string Ad { get; set; }
     }
 }

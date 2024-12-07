@@ -9,7 +9,7 @@ namespace Business.Abstract
 {
     public interface IBolumService
     {
-        List<Bolum> GetById(int bolumId);
+        Bolum GetById(int bolumId);
         List<Bolum> GetList();
         void Add(Bolum bolum);
         void Delete(Bolum bolum);

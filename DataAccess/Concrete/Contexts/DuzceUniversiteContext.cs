@@ -18,7 +18,7 @@ namespace DataAccess.Concrete.Contexts
         public DbSet<Bolum> Bolum { get; set; }
         public DbSet<Ders> Ders { get; set; }
         public DbSet<AkademikPersonel> AkademikPersonel { get; set; }
-        public DbSet<Derslik> Derslikler { get; set; }
+        public DbSet<Derslik> Derslik { get; set; }
         public DbSet<DersBolumAkademikPersonel> DersBolumAkademikPersonel { get; set; }
         public DbSet<SinavDetay> SinavDetay { get; set; }
 
