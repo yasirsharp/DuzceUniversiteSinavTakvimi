@@ -1,12 +1,9 @@
 ﻿using Business.Abstract;
+using Business.Constants;
+using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entity.Concrete;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Business.Concrete
 {
@@ -19,34 +16,32 @@ namespace Business.Concrete
             _dersDal = dersDal;
         }
 
-        public void Add(Ders ders)
+        IResult IDersService.Add(Ders ders)
         {
             _dersDal.Add(ders);
+            return new SuccessResult(Messages.DersAdded);
         }
 
-        public void Delete(Ders ders)
+        IResult IDersService.Delete(Ders ders)
         {
             _dersDal.Delete(ders);
+            return new SuccessResult(Messages.DersDeleted);
         }
 
-        public Ders GetById(int dersId)
+        IDataResult<Ders> IDersService.GetById(int dersId)
         {
-            return _dersDal.Get(q => q.Id == dersId);
+            return new SuccessDataResult<Ders>(_dersDal.Get(q => q.Id == dersId));
         }
 
-        public List<Ders> GetList()
+        IDataResult<List<Ders>> IDersService.GetList(Expression<Func<Ders, bool>> filter)
         {
-            return _dersDal.GetAll();
+            return new SuccessDataResult<List<Ders>>(_dersDal.GetAll(filter), $"{_dersDal.GetAll().Count} tane bulundu.");
         }
 
-        public List<Ders> GetList(Expression<Func<Ders, bool>> filter)
-        {
-            return _dersDal.GetAll(filter);
-        }
-
-        public void Update(Ders ders)
+        IResult IDersService.Update(Ders ders)
         {
             _dersDal.Update(ders);
+            return new SuccessResult(Messages.DersUpdated);
         }
     }
 }

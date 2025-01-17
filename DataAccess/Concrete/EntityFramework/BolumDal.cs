@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DataAccess.Concrete
+namespace DataAccess.Concrete.EntityFramework
 {
-    public class DerslikDal:EfEntityRepositoryBase<Derslik, DuzceUniversiteContext>, IDerslikDal
+    public class BolumDal : EfEntityRepositoryBase<Bolum, DuzceUniversiteContext>, IBolumDal
     {
     }
 }

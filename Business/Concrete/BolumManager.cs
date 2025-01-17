@@ -1,4 +1,6 @@
 ﻿using Business.Abstract;
+using Business.Constants;
+using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entity.Concrete;
 using System;
@@ -18,30 +20,32 @@ namespace Business.Concrete
             _bolumDal = bolumDal;
         }
 
-        public void Add(Bolum bolum)
+        IResult IBolumService.Add(Bolum bolum)
         {
             _bolumDal.Add(bolum);
-
+            return new SuccessResult(Messages.BolumAdded);
         }
 
-        public void Delete(Bolum bolum)
+        IResult IBolumService.Delete(Bolum bolum)
         {
             _bolumDal.Delete(bolum);
+            return new SuccessResult(Messages.BolumDeleted);
         }
 
-        public Bolum GetById(int bolumId)
+        IDataResult<Bolum> IBolumService.GetById(int bolumId)
         {
-            return _bolumDal.Get(p=>p.Id==bolumId);
+            return new SuccessDataResult<Bolum>(_bolumDal.Get(p => p.Id == bolumId));
         }
 
-        public List<Bolum> GetList()
+        IDataResult<List<Bolum>> IBolumService.GetList()
         {
-            return _bolumDal.GetAll();
+            return new SuccessDataResult<List<Bolum>>(_bolumDal.GetAll(), $"{_bolumDal.GetAll()} tane bulundu.");
         }
 
-        public void Update(Bolum bolum)
+        IResult IBolumService.Update(Bolum bolum)
         {
             _bolumDal.Update(bolum);
+            return new SuccessResult(Messages.BolumUpdated);
         }
     }
 }

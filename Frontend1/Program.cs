@@ -1,7 +1,30 @@
+using Business.Abstract;
+using Business.Concrete;
+using DataAccess.Abstract;
+using DataAccess.Concrete.EntityFramework;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IBolumService, BolumManager>();
+builder.Services.AddScoped<IBolumDal, BolumDal>();
+
+builder.Services.AddScoped<IDersService, DersManager>();
+builder.Services.AddScoped<IDersDal, DersDal>();
+
+builder.Services.AddScoped<IAkademikPersonelService, AkademikPersonelManager>();
+builder.Services.AddScoped<IAkademikPersonelDal, AkademikPersonelDal>();
+
+builder.Services.AddScoped<IDBAPService, DBAPManager>();
+builder.Services.AddScoped<IDBAPDal, DBAPDal>();
+
+builder.Services.AddScoped<IDerslikDal, DerslikDal>();
+builder.Services.AddScoped<IDerslikService, DerslikManager>();
+
+builder.Services.AddScoped<ISinavDetayDal, EfSinavDetayDal>();
+builder.Services.AddScoped<ISinavDetayService, SinavDetayManager>();
+
 
 var app = builder.Build();
 

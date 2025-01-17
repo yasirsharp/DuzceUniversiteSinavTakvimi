@@ -1,4 +1,5 @@
-﻿using Business.Concrete;
+﻿using Business.Abstract;
+using Business.Concrete;
 using DataAccess.Concrete;
 using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
@@ -7,21 +8,29 @@ namespace Frontend1.Controllers
 {
     public class DersController : Controller
     {
-        DersManager _dersManager = new DersManager(new DersDal());
+        IDersService _dersService;
+
+        public DersController(IDersService dersService)
+        {
+            _dersService = dersService;
+        }
+
         [HttpGet]
         [Route("Ders/index")]
         [Route("Ders/Yonetim")]
         [Route("Ders/DersYonetim")]
         public IActionResult Index()
         {
-            return View();
+            return View(_dersService.GetList().Data);
         }
         [HttpPost]
         [Route("/Ders/Add")]
         public IActionResult Add([FromBody] Ders ders)
         {
-            _dersManager.Add(ders);
-            return Ok();
+            var result = _dersService.Add(ders);
+            if(result.Success) return Ok();
+
+            return BadRequest(new { message = result.Message });
         }
 
 
@@ -29,25 +38,19 @@ namespace Frontend1.Controllers
         [HttpPost]
         public IActionResult Delete([FromBody] Ders ders)
         {
-            try
-            {
-                // Ders nesnesini sil
-                _dersManager.Delete(ders);
-                return Ok(); // Başarılı yanıt
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
+            var result = _dersService.Delete(ders);
+            if (result.Success) return Ok();
+
+            return BadRequest(new { message = result.Message });
         }
 
         [HttpGet]
         public IActionResult GetById(int id)
         {
-            var ders = _dersManager.GetById(id);
-            if (ders != null)
+            var ders = _dersService.GetById(id);
+            if (ders.Data != null)
             {
-                return Ok(ders); // Ders nesnesini JSON olarak döner
+                return Ok(ders.Data); // Ders nesnesini JSON olarak döner
             }
             return NotFound();
         }
@@ -59,15 +62,10 @@ namespace Frontend1.Controllers
                 return BadRequest("Ders verisi eksik veya geçersiz.");
             }
 
-            try
-            {
-                _dersManager.Update(ders);
-                return Ok(); // Başarılı yanıt
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
+            var result = _dersService.Update(ders);
+            if (result.Success) return Ok();
+
+            return BadRequest(new { message = result.Message });
         }
     }
 }

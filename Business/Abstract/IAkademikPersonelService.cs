@@ -1,4 +1,5 @@
-﻿using Entity.Concrete;
+﻿using Core.Utilities.Results;
+using Entity.Concrete;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,11 +11,10 @@ namespace Business.Abstract
 {
     public interface IAkademikPersonelService
     {
-        AkademikPersonel GetById(int akademikPeronelId);
-        List<AkademikPersonel> GetList(Expression<Func<AkademikPersonel, bool>> filter);
-        List<AkademikPersonel> GetList();
-        void Add(AkademikPersonel akademikPersonel);
-        void Delete(AkademikPersonel akademikPersonel);
-        void Update(AkademikPersonel akademikPersonel);
+        IDataResult<List<AkademikPersonel>> GetList(Expression<Func<AkademikPersonel, bool>> filter = null);
+        IDataResult<AkademikPersonel> GetById(int akademikPeronelId);
+        IResult Add(AkademikPersonel akademikPersonel);
+        IResult Delete(AkademikPersonel akademikPersonel);
+        IResult Update(AkademikPersonel akademikPersonel);
     }
 }

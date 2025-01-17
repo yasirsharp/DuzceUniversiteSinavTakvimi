@@ -1,13 +1,9 @@
 ﻿using Business.Abstract;
+using Business.Constants;
+using Core.Utilities.Results;
 using DataAccess.Abstract;
-using DataAccess.Concrete;
 using Entity.Concrete;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Business.Concrete
 {
@@ -20,34 +16,32 @@ namespace Business.Concrete
             _akademikPersonel = akademikPersonel;
         }
 
-        public void Add(AkademikPersonel akademikPersonel)
+        public IResult Add(AkademikPersonel akademikPersonel)
         {
             _akademikPersonel.Add(akademikPersonel);
+            return new SuccessResult(Messages.AkademikPersonelAdded);
         }
 
-        public void Delete(AkademikPersonel akademikPersonel)
+        public IResult Delete(AkademikPersonel akademikPersonel)
         {
             _akademikPersonel.Delete(akademikPersonel);
+            return new SuccessResult(Messages.AkademikPersonelDeleted);
         }
 
-        public AkademikPersonel GetById(int akademikPeronelId)
+        public IDataResult<AkademikPersonel> GetById(int akademikPeronelId)
         {
-            return _akademikPersonel.Get(q => q.Id == akademikPeronelId);
+            return new SuccessDataResult<AkademikPersonel>(_akademikPersonel.Get(q => q.Id == akademikPeronelId));
         }
 
-        public List<AkademikPersonel> GetList(Expression<Func<AkademikPersonel, bool>> filter)
+        public IDataResult<List<AkademikPersonel>> GetList(Expression<Func<AkademikPersonel, bool>> filter = null)
         {
-            return _akademikPersonel.GetAll(filter);
+            return new SuccessDataResult<List<AkademikPersonel>>(_akademikPersonel.GetAll(filter), $"{_akademikPersonel.GetAll(filter).Count} tane bulundu.");
         }
 
-        public List<AkademikPersonel> GetList()
-        {
-            return _akademikPersonel.GetAll();
-        }
-
-        public void Update(AkademikPersonel akademikPersonel)
+        public IResult Update(AkademikPersonel akademikPersonel)
         {
             _akademikPersonel.Update(akademikPersonel);
+            return new SuccessResult(Messages.AkademikPersonelUpdated);
         }
     }
 }

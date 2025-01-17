@@ -1,25 +1,26 @@
 ﻿@using Business.Concrete
 @using DataAccess.Concrete
+@using Entity.Concrete
+
+@model List<Ders>
 
 @{
     ViewData["Title"] = "Ders Yönetimi";
-    DersManager dersManager = new DersManager(new DersDal());
-    var list = dersManager.GetList();
     void getAllBolum()
     {
-        foreach (var item in list)
-        {
-            <tbody class="table-group-divider">
-                <tr>
+        <tbody id="tableBody">
+            @foreach (var item in Model)
+            {
+                <tr data-id="@item.Id">
                     <th scope="row">@item.Id</th>
                     <td>@item.Ad</td>
                     <td>
                         <button class="btn btn-warning btn-sm edit-btn" data-id="@item.Id" data-name="@item.Ad">Düzenle</button>
-                        <button class="btn btn-danger btn-sm delete-btn" data-id="@item.Id">Sil</button>
+                        <button class="btn btn-danger btn-sm delete-btn" data-id="@item.Id" data-name="@item.Ad">Sil</button>
                     </td>
                 </tr>
-            </tbody>
-        }
+            }
+        </tbody>
     }
 }
 <div class="container mt-5">
@@ -35,33 +36,25 @@
                 <th>İşlem</th>
             </tr>
         </thead>
-        @{
-            getAllBolum();
-        }
-        <tbody class="table-group-divider" style="display: none;" id="inputRow">
+        <tbody id="inputRow" style="display: none;">
             <tr>
-                <th scope="row"></th>
+                <th scope="row">#</th>
                 <td>
-                    <input type="text" id="ad" class="form-control" />
+                    <input type="text" id="newAd" class="form-control" placeholder="Ders adı giriniz">
                 </td>
                 <td>
-                    <button class="btn btn-secondary" id="submitBtn">
-                        + Ekle
-                    </button>
+                    <button class="btn btn-success btn-sm" id="submitBtn">Kaydet</button>
+                    <button class="btn btn-secondary btn-sm" id="cancelNewRowBtn">İptal</button>
                 </td>
             </tr>
         </tbody>
+        @{
+            getAllBolum();
+        }
     </table>
 </div>
-<!-- Toast container -->
-<div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3">
-    <div id="toast-container">
-        <!-- Toast items will be added here dynamically -->
-    </div>
-</div>
-
 @section Scripts {
-    <script src="~/js/components.js"></script>
+    <script src="~/js/component-ders.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Sayfanın türüne göre entityName'i belirliyoruz

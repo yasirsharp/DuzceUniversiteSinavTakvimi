@@ -1,4 +1,5 @@
-﻿using Entity.Concrete;
+﻿using Core.Utilities.Results;
+using Entity.Concrete;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +10,10 @@ namespace Business.Abstract
 {
     public interface IBolumService
     {
-        Bolum GetById(int bolumId);
-        List<Bolum> GetList();
-        void Add(Bolum bolum);
-        void Delete(Bolum bolum);
-        void Update(Bolum bolum);
+        IDataResult<List<Bolum>> GetList();
+        IDataResult<Bolum> GetById(int bolumId);
+        IResult Add(Bolum bolum);
+        IResult Delete(Bolum bolum);
+        IResult Update(Bolum bolum);
     }
 }

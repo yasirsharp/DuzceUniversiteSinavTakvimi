@@ -1,27 +1,37 @@
-﻿using Business.Concrete;
+﻿using Business.Abstract;
+using Business.Concrete;
 using DataAccess.Concrete;
 using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Frontend1.Controllers
 {
     public class AkademikPersonelController : Controller
     {
-        AkademikPersonelManager _akademikPersonelManager = new AkademikPersonelManager(new AkademikPersonelDal()); 
+        IAkademikPersonelService _akademikPersonelService;
+
+        public AkademikPersonelController(IAkademikPersonelService akademikPersonelService)
+        {
+            _akademikPersonelService = akademikPersonelService;
+        }
+
         [HttpGet]
         [Route("AkademikPersonel/index")]
         [Route("AkademikPersonel/Yonetim")]
         [Route("AkademikPersonel/AkademikPersonelYonetim")]
         public IActionResult Index()
         {
-            return View();
+            return View(_akademikPersonelService.GetList().Data);
         }
         [HttpPost]
         [Route("/AkademikPersonel/Add")]
         public IActionResult Add([FromBody] AkademikPersonel akademikPersonel)
         {
-            _akademikPersonelManager.Add(akademikPersonel);
-            return Ok();
+            var result = _akademikPersonelService.Add(akademikPersonel);
+            if (result.Success) return Ok();
+
+            return BadRequest(new { message = result.Message });
         }
 
 
@@ -29,45 +39,26 @@ namespace Frontend1.Controllers
         [HttpPost]
         public IActionResult Delete([FromBody] AkademikPersonel akademikPersonel)
         {
-            try
-            {
-                // Bolum nesnesini sil
-                _akademikPersonelManager.Delete(akademikPersonel);
-                return Ok(); // Başarılı yanıt
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
-        }
+            var result = _akademikPersonelService.Delete(akademikPersonel);
+            if (result.Success) return Ok();
 
-        [HttpGet]
-        public IActionResult GetById(int id)
-        {
-            var akademikPersonel = _akademikPersonelManager.GetById(id);
-            if (akademikPersonel != null)
-            {
-                return Ok(akademikPersonel); // Bölüm nesnesini JSON olarak döner
-            }
-            return NotFound();
+            return BadRequest(new { message = result.Message });
         }
         [HttpPost]
         public IActionResult Update([FromBody] AkademikPersonel akademikPersonel)
         {
-            if (akademikPersonel == null)
+            var _akademikPersonel = _akademikPersonelService.GetById(akademikPersonel.Id);
+            if (_akademikPersonel.Data == null)
             {
-                return BadRequest("AkademikPersonel verisi eksik veya geçersiz.");
+                return BadRequest(new { message = _akademikPersonel.Message });
             }
 
-            try
+            var result = _akademikPersonelService.Update(akademikPersonel);
+            if (!result.Success)
             {
-                _akademikPersonelManager.Update(akademikPersonel);
-                return Ok(); // Başarılı yanıt
+                return BadRequest(new { message = result.Message });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
+            return Ok(); // Başarılı yanıt
         }
     }
 }

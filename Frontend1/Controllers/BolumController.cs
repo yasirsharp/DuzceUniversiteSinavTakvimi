@@ -1,4 +1,5 @@
-﻿using Business.Concrete;
+﻿using Business.Abstract;
+using Business.Concrete;
 using DataAccess.Concrete;
 using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
@@ -7,20 +8,26 @@ namespace Frontend1.Controllers
 {
     public class BolumController : Controller
     {
-        BolumManager bolumManager = new BolumManager(new BolumDal());
+        IBolumService _bolumService;
+
+        public BolumController(IBolumService bolumService)
+        {
+            _bolumService = bolumService;
+        }
+
         [HttpGet]
         [Route("Bolum/index")]
         [Route("Bolum/Yonetim")]
         [Route("Bolum/BolumYonetim")]
         public IActionResult Index()
         {
-            return View();
+            return View(_bolumService.GetList().Data);
         }
         [HttpPost]
         [Route("/Bolum/Add")]
         public IActionResult Add([FromBody] Bolum bolum)
         {
-            bolumManager.Add(bolum);
+            _bolumService.Add(bolum);
             return Ok();
         }
 
@@ -29,46 +36,29 @@ namespace Frontend1.Controllers
         [HttpPost]
         public IActionResult Delete([FromBody] Bolum bolum)
         {
-            try
+            var result = _bolumService.Delete(bolum);
+            if (result.Success)
             {
-                // Bolum nesnesini sil
-                bolumManager.Delete(bolum);
                 return Ok(); // Başarılı yanıt
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
-        }
+            return BadRequest(new { message = result.Message });
 
-        [HttpGet]
-        public IActionResult GetById(int id)
-        {
-            var bolum = bolumManager.GetById(id);
-            if (bolum != null)
-            {
-                return Ok(bolum); // Bölüm nesnesini JSON olarak döner
-            }
-            return NotFound();
         }
         [HttpPost]
         public IActionResult Update([FromBody] Bolum bolum)
         {
-            if (bolum == null)
+            var _bolum = _bolumService.GetById(bolum.Id);
+            if (_bolum.Data == null)
             {
-                return BadRequest("Bölüm verisi eksik veya geçersiz.");
+                return BadRequest(new { message = _bolum.Message });
             }
 
-            try
+            var result = _bolumService.Update(bolum);
+            if (!result.Success)
             {
-                // Bölüm adı güncellemesi
-                bolumManager.Update(bolum);
-                return Ok(); // Başarılı yanıt
+                return BadRequest(new { message = result.Message });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
+            return Ok(); // Başarılı yanıt
         }
     }
 }

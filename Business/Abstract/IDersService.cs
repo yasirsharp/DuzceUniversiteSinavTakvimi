@@ -1,4 +1,5 @@
-﻿using Entity.Abstract;
+﻿using Core.Utilities.Results;
+using Entity.Abstract;
 using Entity.Concrete;
 using System;
 using System.Collections.Generic;
@@ -11,11 +12,10 @@ namespace Business.Abstract
 {
     public interface IDersService
     {
-        Ders GetById(int dersId);
-        List<Ders> GetList(Expression<Func<Ders, bool>> filter);
-        List<Ders> GetList();
-        void Add(Ders ders);
-        void Delete(Ders ders);
-        void Update(Ders ders);
+        IDataResult<Ders> GetById(int dersId);
+        IDataResult<List<Ders>> GetList(Expression<Func<Ders, bool>> filter = null);
+        IResult Add(Ders ders);
+        IResult Delete(Ders ders);
+        IResult Update(Ders ders);
     }
 }

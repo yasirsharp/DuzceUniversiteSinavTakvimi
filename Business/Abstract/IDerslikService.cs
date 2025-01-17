@@ -1,4 +1,5 @@
-﻿using Entity.Concrete;
+﻿using Core.Utilities.Results;
+using Entity.Concrete;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,11 +11,10 @@ namespace Business.Abstract
 {
     public interface IDerslikService
     {
-        Derslik GetById(int derslikId);
-        List<Derslik> GetList(Expression<Func<Derslik, bool>> filter);
-        List<Derslik> GetList();
-        void Add(Derslik ders);
-        void Delete(Derslik ders);
-        void Update(Derslik ders);
+        IDataResult<List<Derslik>> GetList();
+        IDataResult<Derslik> GetById(int derslikId);
+        IResult Add(Derslik derslik);
+        IResult Delete(Derslik derslik);
+        IResult Update(Derslik derslik);
     }
 }

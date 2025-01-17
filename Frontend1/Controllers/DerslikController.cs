@@ -1,4 +1,5 @@
-﻿using Business.Concrete;
+﻿using Business.Abstract;
+using Business.Concrete;
 using DataAccess.Concrete;
 using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
@@ -7,67 +8,50 @@ namespace Frontend1.Controllers
 {
     public class DerslikController : Controller
     {
-        DerslikManager _derslikManager = new DerslikManager(new DerslikDal());
+        IDerslikService _derslikService;
+
+        public DerslikController(IDerslikService derslikService)
+        {
+            _derslikService = derslikService;
+        }
+
         [HttpGet]
         [Route("Derslik/index")]
         [Route("Derslik/Yonetim")]
         [Route("Derslik/DerslikYonetim")]
         public IActionResult Index()
         {
-            return View();
+            return View(_derslikService.GetList().Data);
         }
         [HttpPost]
         [Route("/Derslik/Add")]
         public IActionResult Add([FromBody] Derslik derslik)
         {
-            _derslikManager.Add(derslik);
-            return Ok();
+            var result = _derslikService.Add(derslik);
+            
+            if (!result.Success) return BadRequest();
+
+            return Ok(result.Message);
         }
-
-
 
         [HttpPost]
         public IActionResult Delete([FromBody] Derslik derslik)
         {
-            try
-            {
-                // Bolum nesnesini sil
-                _derslikManager.Delete(derslik);
-                return Ok(); // Başarılı yanıt
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
+            var result = _derslikService.Delete(derslik);
+
+            if (!result.Success) return BadRequest();
+
+            return Ok(result.Message);
         }
 
-        [HttpGet]
-        public IActionResult GetById(int id)
-        {
-            var derslik = _derslikManager.GetById(id);
-            if (derslik != null)
-            {
-                return Ok(derslik); // Derslik nesnesini JSON olarak döner
-            }
-            return NotFound();
-        }
         [HttpPost]
         public IActionResult Update([FromBody] Derslik derslik)
         {
-            if (derslik == null)
-            {
-                return BadRequest("Ders verisi eksik veya geçersiz.");
-            }
+            var result = _derslikService.Update(derslik);
 
-            try
-            {
-                _derslikManager.Update(derslik);
-                return Ok(); // Başarılı yanıt
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Hata oluştu: " + ex.Message });
-            }
+            if (!result.Success) return BadRequest();
+
+            return Ok(result.Message);
         }
     }
 }

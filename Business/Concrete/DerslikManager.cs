@@ -1,4 +1,6 @@
 ﻿using Business.Abstract;
+using Business.Constants;
+using Core.Utilities.Results;
 using DataAccess.Abstract;
 using DataAccess.Concrete;
 using Entity.Concrete;
@@ -19,35 +21,34 @@ namespace Business.Concrete
         {
             _derslikDal = derslikDal;
         }
-
-        public void Add(Derslik derslik)
+        IResult IDerslikService.Add(Derslik derslik)
         {
             _derslikDal.Add(derslik);
+            return new SuccessResult(Messages.DerslikAdded);
         }
 
-        public void Delete(Derslik derslik)
+        IResult IDerslikService.Delete(Derslik derslik)
         {
             _derslikDal.Delete(derslik);
+            return new SuccessResult(Messages.DerslikDeleted);
         }
 
-        public Derslik GetById(int derslikId)
+        IDataResult<Derslik> IDerslikService.GetById(int derslikId)
         {
-            return _derslikDal.Get(q => q.Id == derslikId);
+            var result = _derslikDal.Get(q=>q.Id == derslikId);
+            return new SuccessDataResult<Derslik>(result);
         }
 
-        public List<Derslik> GetList()
+        IDataResult<List<Derslik>> IDerslikService.GetList()
         {
-            return _derslikDal.GetAll();
+            var result = _derslikDal.GetAll();
+            return new SuccessDataResult<List<Derslik>>(result, $"{result.Count} tane sonuç bulundu.");
         }
 
-        public List<Derslik> GetList(Expression<Func<Derslik, bool>> filter)
-        {
-            return _derslikDal.GetAll(filter);
-        }
-
-        public void Update(Derslik derslik)
+        IResult IDerslikService.Update(Derslik derslik)
         {
             _derslikDal.Update(derslik);
+            return new SuccessResult(Messages.DerslikUpdated);
         }
     }
 }

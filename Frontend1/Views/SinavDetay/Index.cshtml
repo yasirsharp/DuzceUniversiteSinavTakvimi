@@ -1,0 +1,294 @@
+﻿@using Core.Utilities.Results
+@using Entity.Concrete
+@using Entity.DTOs
+@{
+    ViewData["Title"] = "Sınav Detay";
+    var dbap = ViewData["DBAP"] as IDataResult<List<DersBolumAkademikPersonel>>;
+    var dbap_detail = ViewData["DBAPDetail"] as IDataResult<List<DersBolumAkademikPersonelDTO>>;
+    var sinavs = ViewData["SinavDetay"] as IDataResult<List<SinavDetayDTO>>;
+    var derslikler = ViewData["Derslikler"] as IDataResult<List<Derslik>>;
+
+}
+<style>
+    .fc-event {
+        padding: 10px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    /* Örnek bölüm renkleri */
+    .bolum-matematik {
+        background-color: #ffcccb; /* Kırmızı ton */
+        border: 1px solid #ff8888;
+    }
+
+    .bolum-bilgisayar {
+        background-color: #cce5ff; /* Mavi ton */
+        border: 1px solid #80bdff;
+    }
+
+    .bolum-fizik {
+        background-color: #d4edda; /* Yeşil ton */
+        border: 1px solid #a3d5a2;
+    }
+
+    .bolum-kimya {
+        background-color: #fff3cd; /* Sarı ton */
+        border: 1px solid #ffecb5;
+    }
+
+    /* Kartın içeriği için stiller */
+    .fc-event .ders-ad {
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+
+    .fc-event .akademik-personel {
+        font-size: 13px;
+        color: #555;
+    }
+</style>
+
+<style>
+    #calendar {
+        max-width: 100%;
+        margin:  0 auto;
+    }
+
+    .content-wrapper {
+        margin-left: 0 !important;
+    }
+</style>  <!-- fullCalendar -->
+<link rel="stylesheet" href="https://adminlte.io/themes/v3/plugins/fullcalendar/main.css">
+<!-- Theme style -->
+<link rel="stylesheet" href="https://adminlte.io/themes/v3/dist/css/adminlte.min.css?v=3.2.0">
+
+<div class="row d-flex justify-content-around">
+    <div class="content-wrapper" @* style="margin-left:0;" *@>
+        <!-- Content Header (Page header) -->
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Calendar</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="#">Home</a></li>
+                            <li class="breadcrumb-item active">Calendar</li>
+                        </ol>
+                    </div>
+                </div>
+            </div><!-- /.container-fluid -->
+        </section>
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="sticky-top mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">Draggable Events</h4>
+                                </div>
+                                <div class="card-body">
+                                    <select class="form-control js-example-basic-multiple" name="states[]" multiple="multiple">
+                                        @foreach (var derslik in derslikler.Data)
+                                        {
+                                            <option value="@derslik.Id">@derslik.Ad (@derslik.Kapasite)</option>
+                                        }
+                                    </select>
+                                    <!-- the events -->
+                                    <div id="external-events">
+                                        @foreach (var item in dbap_detail.Data)
+                                        {
+                                            <div class="external-event bg-success" data-id="@item.Id">
+                                                <h5>@item.DersAd</h5> <br />
+                                                <p>@item.AkademikPersonelAd</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <!-- /.card-body -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.col -->
+                    <div class="col-md-9">
+                        <div class="card card-primary">
+                            <div class="card-body p-0">
+                                <!-- THE CALENDAR -->
+                                <div id="calendar"></div>
+                            </div>
+                            <!-- /.card-body -->
+                        </div>
+                        <!-- /.card -->
+                    </div>
+                    <!-- /.col -->
+                </div>
+                <!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+</div>
+
+<!-- jQuery -->
+<script src="https://adminlte.io/themes/v3/plugins/jquery/jquery.min.js"></script>
+
+<!-- jQuery UI -->
+<script src="https://adminlte.io/themes/v3/plugins/jquery-ui/jquery-ui.min.js"></script>
+
+<!-- Bootstrap -->
+<script src="https://adminlte.io/themes/v3/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+<!-- AdminLTE App -->
+<script src="https://adminlte.io/themes/v3/dist/js/adminlte.min.js?v=3.2.0"></script>
+
+<!-- Moment.js (FullCalendar için gerekli) -->
+<script src="https://adminlte.io/themes/v3/plugins/moment/moment.min.js"></script>
+
+<!-- FullCalendar -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
+<script>
+    var selectedValues = []; // Seçili öğeler burada tutulacak
+        $(document).ready(function () {
+        $('.js-example-basic-multiple').select2();
+
+        // Seçim değiştiğinde değerleri güncelle
+        $('.js-example-basic-multiple').on('change', function (e) {
+            selectedValues = $(this).val(); // Seçili öğelerin değerlerini alır (dizi olarak)
+            console.log('Seçili öğeler:', selectedValues);
+
+            var sinavlar = @Html.Raw(Json.Serialize(sinavs!.Data)); // C# listesini JavaScript'e aktar
+
+            for (var i = 0; i < sinavlar.length; i++) {
+                // selectedValues.includes() ile seçili derslikId'yi kontrol et
+                console.log(selectedValues.indexOf(sinavlar[i].derslikId));
+                if (selectedValues.indexOf(sinavlar[i].derslikId) != -1) {
+                    console.log("ssss");
+                    calendar.addEvent({
+                        title: sinavlar[i].DersAd + ' - ' + sinavlar[i].BolumAd,
+                        start: sinavlar[i].SinavTarihi,
+                        end: sinavlar[i].SinavTarihi, // Gerekirse bitiş saatini de ekleyebilirsin
+                        backgroundColor: '#f56954',
+                        borderColor: '#f56954',
+                        allDay: false,
+                        description: sinavlar[i].AkademikPersonelAd + ' ' + sinavlar[i].Unvan
+                    }); // Yeni eventleri ekle
+                }
+            }
+
+            console.log(sinavlar);
+
+            // calendar.removeAllEvents(); // Eski eventleri kaldır
+        calendar.render();
+        });
+    });
+
+
+    $(function () {
+        /* Draggable etkinliklerin başlatılması */
+        function ini_events(ele) {
+            ele.each(function () {
+                var eventObject = {
+                    title: $.trim($(this).text()) // Event başlığı
+                };
+
+                $(this).data('eventObject', eventObject);
+
+                $(this).draggable({
+                    zIndex: 1070,
+                    revert: true,           // Sürükleme sonrası eski konumuna dön
+                    revertDuration: 0.4     // Dönüş süresi
+                });
+            });
+        }
+
+        ini_events($('#external-events div.external-event'));
+
+        var Calendar = FullCalendar.Calendar;
+        var Draggable = FullCalendar.Draggable;
+
+        var containerEl = document.getElementById('external-events');
+        var calendarEl = document.getElementById('calendar');
+
+        /* Draggable için ayarlar */
+        new Draggable(containerEl, {
+            itemSelector: '.external-event',
+            eventData: function (eventEl) {
+                var dersAd = eventEl.querySelector('h5')?.innerText.trim();  // Ders adını al
+                var akademikPersonel = eventEl.querySelector('p')?.innerText.trim();  // Akademik personel adını al
+
+                if (!dersAd) {
+                    console.error('Draggable event has no valid title:', eventEl);
+                    return {}; // Eğer title boşsa hata verir ve boş obje döner
+                }
+
+                return {
+                    title: dersAd + ' - ' + akademikPersonel,
+                    backgroundColor: window.getComputedStyle(eventEl, null).getPropertyValue('background-color'),
+                    borderColor: window.getComputedStyle(eventEl, null).getPropertyValue('background-color'),
+                    textColor: window.getComputedStyle(eventEl, null).getPropertyValue('color')
+                };
+            }
+        });
+
+        /* Takvimin başlatılması */
+        var calendar = new Calendar(calendarEl, {
+            initialView: 'dayGridWeek',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            themeSystem: 'bootstrap',
+            events: [], // Başlangıçta boş event listesi
+            editable: true,
+            droppable: true,
+            drop: function (info) {
+                console.log(info);
+                console.log(info.draggedEl.getAttribute("data-id"));
+                if (!info.event || !info.event.title) {
+                    console.error('Event title is undefined or missing:', info);
+                    return;
+                }
+                const eventData = {
+                    DBAPId: 1, // Örnek bir DBAPId
+                    DerslikId: 1, // Örnek bir DerslikId
+                    SinavTarihi: info.event.start.toISOString().split('T')[0],
+                    SinavSaati: info.event.start.toISOString().split('T')[1]
+                };
+
+                // AJAX isteği gönder
+                $.ajax({
+                    url: '/sinavdetay/add',
+                    type: 'POST',
+                    data: eventData,
+                    success: function (response) {
+                        console.log('Event added successfully:', response);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error adding event:', error);
+                    }
+                });
+            }
+        });
+
+        calendar.setOption('locale', 'tr');
+        calendar.render();
+    });
+</script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
