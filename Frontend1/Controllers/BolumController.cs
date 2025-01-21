@@ -27,8 +27,8 @@ namespace Frontend1.Controllers
         [Route("/Bolum/Add")]
         public IActionResult Add([FromBody] Bolum bolum)
         {
-            _bolumService.Add(bolum);
-            return Ok();
+            var result = _bolumService.Add(bolum);
+            return Ok(result);
         }
 
 
@@ -39,9 +39,9 @@ namespace Frontend1.Controllers
             var result = _bolumService.Delete(bolum);
             if (result.Success)
             {
-                return Ok(); // Başarılı yanıt
+                return Ok(result); // Başarılı yanıt
             }
-            return BadRequest(new { message = result.Message });
+            return BadRequest(result);
 
         }
         [HttpPost]
@@ -56,9 +56,9 @@ namespace Frontend1.Controllers
             var result = _bolumService.Update(bolum);
             if (!result.Success)
             {
-                return BadRequest(new { message = result.Message });
+                return BadRequest(result);
             }
-            return Ok(); // Başarılı yanıt
+            return Ok(result); // Başarılı yanıt
         }
     }
 }

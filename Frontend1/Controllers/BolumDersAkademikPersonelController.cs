@@ -1,4 +1,5 @@
 ﻿using Business.Abstract;
+using Core.Utilities.Results;
 using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
 
@@ -41,6 +42,36 @@ namespace Frontend1.Controllers
             {
                 return BadRequest(result);
             }
+            return Ok(result);
+        }
+
+        [HttpPost]
+        [Route("BolumDersAkademikPersonel/Delete")]
+        public IActionResult Delete([FromBody] DersBolumAkademikPersonel model)
+        {
+            try
+            {
+                var result = _dbapService.Delete(model);
+                if (!result.Success)
+                {
+                    return BadRequest(result);
+                }
+                return Ok(result);
+            }
+            catch (Exception err)
+            {
+                return BadRequest(new ErrorResult(err.Message));
+            }
+        }
+
+        [HttpGet]
+        [Route("/BolumDersAkademikPersonel/GetDetail/{id}")]
+        public IActionResult GetDetail(int id)
+        {
+            var result = _dbapService.GetDetail(id);
+
+            if (!result.Success) return BadRequest(result);
+
             return Ok(result);
         }
 

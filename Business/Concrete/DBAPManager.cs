@@ -63,5 +63,18 @@ namespace Business.Concrete
             var result = _dbapDal.GetDetails().ToList();
             return new SuccessDataResult<List<DersBolumAkademikPersonelDTO>>(result, $"{result.Count} tane bulundu.");
         }
+
+        public IDataResult<DersBolumAkademikPersonelDTO> GetDetail(int dbapId)
+        {
+            try
+            {
+                var result = _dbapDal.GetDetail(dbapId);
+                return new SuccessDataResult<DersBolumAkademikPersonelDTO>(result);
+            }
+            catch (Exception err)
+            {
+                return new ErrorDataResult<DersBolumAkademikPersonelDTO>(err.Message);
+            }
+        }
     }
 }

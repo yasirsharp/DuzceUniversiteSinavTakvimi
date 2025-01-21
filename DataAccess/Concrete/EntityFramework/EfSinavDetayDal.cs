@@ -25,7 +25,6 @@ namespace DataAccess.Concrete.EntityFramework
                              join d in context.Ders on dba.DersId equals d.Id
                              join b in context.Bolum on dba.BolumId equals b.Id
                              join ap in context.AkademikPersonel on dba.AkademikPersonelId equals ap.Id
-                             join derslik in context.Derslik on s.DerslikId equals derslik.Id
                              where s.Id == sinavDetayId
                              select new SinavDetayDTO
                              {
@@ -33,9 +32,7 @@ namespace DataAccess.Concrete.EntityFramework
                                  DersAd = d.Ad,
                                  BolumAd = b.Ad,
                                  AkademikPersonelAd = ap.Ad,
-                                 DerslikId = derslik.Id,
                                  Unvan = ap.Unvan,
-                                 DerslikKontenjan = derslik.Kapasite,
                                  SinavTarihi = s.SinavTarihi,
                                  SinavSaati = s.SinavSaati,
                              };
@@ -53,16 +50,13 @@ namespace DataAccess.Concrete.EntityFramework
                              join d in context.Ders on dba.DersId equals d.Id
                              join b in context.Bolum on dba.BolumId equals b.Id
                              join ap in context.AkademikPersonel on dba.AkademikPersonelId equals ap.Id
-                             join derslik in context.Derslik on s.DerslikId equals derslik.Id
                              select new SinavDetayDTO
                              {
                                  Id = dba.Id,
                                  DersAd = d.Ad,
                                  BolumAd = b.Ad,
                                  AkademikPersonelAd = ap.Ad,
-                                 DerslikId = derslik.Id,
                                  Unvan = ap.Unvan,
-                                 DerslikKontenjan = derslik.Kapasite,
                                  SinavTarihi = s.SinavTarihi,
                                  SinavSaati = s.SinavSaati,
                              };

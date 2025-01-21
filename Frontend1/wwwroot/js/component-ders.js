@@ -1,209 +1,249 @@
-﻿// Satıra dokununca nesne silme
-function initializeDeleteButtons(entityName) {
+﻿document.addEventListener('DOMContentLoaded', function () {
+    // Sayfanın türüne göre entityName'i belirliyoruz
+    const entityName = 'Ders'; // Bu sayfa için 'Ders' nesnesi
 
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                console.log("sss");
-                const itemId = this.getAttribute('data-id');
-                const itemName = this.getAttribute('data-name');
-                var entity;
-                entity = {
-                    id: itemId,
-                    ad: itemName
-                };
-                if (confirm(`Bu ${itemName} silmek istediğinizden emin misiniz?`)) {
-                    deleteItem(entity, entityName);  // Entity parametresi ile işlem yapıyoruz
+    initializeDeleteButtons(entityName);
+    initializeAddButton(entityName);
+    initializeEditButtons(entityName);
+});
+
+// Silme işlemi
+function initializeDeleteButtons(entityName) {
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: `"${name}" dersini silmek istediğinize emin misiniz?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, Sil!',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteEntity(id, entityName);
                 }
             });
         });
+    });
 }
 
-function deleteItem(item, entityName) {
-    fetch(`/${entityName}/Delete`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(item)
-    }).then(response => {
-        if (response.ok) {
-            showToast('success', `${entityName} başarıyla silindi!`);
-            location.reload(); // Sayfayı yeniden yükle
+// API işlemleri
+function deleteEntity(id, entityName) {
+    fetch(`/${entityName}/Delete/${id}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            document.querySelector(`tr[data-id="${id}"]`).remove();
         } else {
-            showToast('danger', `${entityName} silme işlemi başarısız oldu!`);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
         }
-    }).catch(error => {
-        console.error(`${entityName} silme sırasında hata:`, error);
-        showToast('danger', 'Bir hata oluştu!');
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
     });
 }
 
 // Ekleme işlemi
 function initializeAddButton(entityName) {
-        document.getElementById("addRowBtn").addEventListener("click", function () {
-            // Input satırını göster
-            document.getElementById("inputRow").style.display = "table-row-group";
+    const inputRow = document.getElementById("inputRow");
+    const tableBody = document.getElementById("tableBody");
+    
+    // Ekle butonuna tıklandığında
+    document.getElementById("addRowBtn").addEventListener("click", function () {
+        // Input satırını göster ve en üste taşı
+        inputRow.style.display = "table-row-group";
+        // Input row'u tablonun en üstüne taşı
+        tableBody.parentNode.insertBefore(inputRow, tableBody);
+        // Input alanını temizle
+        document.getElementById('newAd').value = '';
+    });
+
+    // İptal butonuna tıklandığında
+    document.getElementById("cancelNewRowBtn").addEventListener("click", function() {
+        // Input satırını gizle
+        inputRow.style.display = "none";
+        // Input alanını temizle
+        document.getElementById('newAd').value = '';
+        
+        // İptal edildiğini bildir
+        Swal.fire({
+            icon: 'info',
+            title: 'İptal Edildi',
+            text: 'Ekleme işlemi iptal edildi.',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
         });
+    });
 
-        document.getElementById("submitBtn").addEventListener("click", function () {
-            var ad = document.getElementById("newAd").value;
-
-            if (ad) {
-                var entity;
-                entity = {
-                    ad: ad
-                };
-
-                // Fetch ile entity nesnesini backend'e gönder
-                fetch(`/${entityName}/Add`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(entity) // JSON olarak gönderiyoruz
-                })
-                    .then(response => {
-                        if (response.ok) {
-                            showToast('success', `${entityName} başarıyla eklendi!`);
-                        } else {
-                            showToast('danger', `${entityName} eklenirken bir hata oluştu!`);
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Hata:", error);
-                        showToast('danger', `Bir hata oluştu: ${error.message}`);
-                    });
-            }
-            else {
-                showToast('danger', 'Lütfen bir isim girin!');
-            }
-        });
+    // Kaydet butonuna tıklandığında
+    document.getElementById("submitBtn").addEventListener("click", function() {
+        const newAd = document.getElementById('newAd').value;
+        if (!newAd) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Uyarı!',
+                text: 'Lütfen ders adını giriniz.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            return;
+        }
+        addEntity(newAd, entityName);
+    });
 }
-
 
 // Düzenleme işlemi
 function initializeEditButtons(entityName) {
-        document.querySelector('#dataTable').addEventListener('click', function (event) {
-            if (event.target.classList.contains('edit-btn')) {
-                const button = event.target;
-                const itemId = button.getAttribute('data-id');
-                const row = button.closest('tr');
-                const itemNameCell = row.querySelector('td:nth-child(2)');
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const currentName = this.getAttribute('data-name');
 
-                // İlk ad değerini alıyoruz
-                const initialName = button.getAttribute('data-name');
-
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.classList.add('form-control');
-                input.value = initialName; // İlk değer burada atanıyor
-
-                itemNameCell.innerHTML = '';
-                itemNameCell.appendChild(input);
-
-                button.style.display = 'none';
-
-                const saveButton = document.createElement('button');
-                saveButton.classList.add('btn', 'btn-success', 'btn-sm');
-                saveButton.textContent = 'Kaydet';
-
-                const cancelButton = document.createElement('button');
-                cancelButton.classList.add('btn', 'btn-danger', 'btn-sm');
-                cancelButton.textContent = 'İptal';
-
-                const actionCell = row.querySelector('td:nth-child(3)');
-                actionCell.innerHTML = '';
-                actionCell.appendChild(saveButton);
-                actionCell.appendChild(cancelButton);
-
-                saveButton.addEventListener('click', function () {
-                    // Güncel değerleri buradan alıyoruz
-                    var updatedName = input.value;
-
-                    var _entity = {
-                        id: itemId,
-                        ad: updatedName  // Güncel ad değerini buradan alıyoruz
-                    };
-
-                    updateItem(_entity, entityName);  // Güncel değerleri gönderiyoruz
-
-                    // Tabloyu güncelliyoruz
-                    itemNameCell.innerHTML = updatedName;  // Güncel ad değeri
-
-                    const newEditButton = document.createElement('button');
-                    newEditButton.classList.add('btn', 'btn-warning', 'btn-sm', 'edit-btn');
-                    newEditButton.textContent = 'Düzenle';
-                    newEditButton.setAttribute('data-id', itemId);
-                    newEditButton.setAttribute('data-name', updatedName);  // Güncel ad değeri
-
-                    const newDeleteButton = document.createElement('button');
-                    newDeleteButton.classList.add('btn', 'btn-danger', 'btn-sm', 'delete-btn');
-                    newDeleteButton.textContent = 'Sil';
-                    newDeleteButton.setAttribute('data-id', itemId);
-
-                    actionCell.innerHTML = '';
-                    actionCell.appendChild(newEditButton);
-                    actionCell.appendChild(newDeleteButton);
-
-                    showToast('success', `${entityName} başarıyla güncellendi!`);
-                });
-
-                cancelButton.addEventListener('click', function () {
-                    itemNameCell.innerHTML = initialName;  // İlk adı geri yükler
-
-                    const newEditButton = document.createElement('button');
-                    newEditButton.classList.add('btn', 'btn-warning', 'btn-sm', 'edit-btn');
-                    newEditButton.textContent = 'Düzenle';
-                    newEditButton.setAttribute('data-id', itemId);
-                    newEditButton.setAttribute('data-name', initialName);
-
-                    actionCell.innerHTML = '';
-                    actionCell.appendChild(newEditButton);
-
-                    showToast('danger', 'Düzenleme iptal edildi!');
-                });
-            }
+            Swal.fire({
+                title: 'Ders Düzenle',
+                input: 'text',
+                inputValue: currentName,
+                showCancelButton: true,
+                confirmButtonText: 'Güncelle',
+                cancelButtonText: 'İptal',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Lütfen bir değer giriniz!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    updateEntity(id, result.value, entityName);
+                }
+            });
         });
+    });
 }
 
-function updateItem(item, entityName) {
+function addEntity(name, entityName) {
+    fetch(`/${entityName}/Add`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ Ad: name })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            location.reload();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    });
+}
+
+function updateEntity(id, newName, entityName) {
     fetch(`/${entityName}/Update`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(item)  // Burada tüm item nesnesini JSON olarak gönderiyoruz
-    }).then(response => {
-        if (response.ok) {
-            showToast('success', `${entityName} başarıyla güncellendi!`);
+        body: JSON.stringify({ Id: id, Ad: newName })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            location.reload();
         } else {
-            showToast('danger', `${entityName} güncelleme işlemi başarısız oldu!`);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
         }
-    }).catch(error => {
-        console.error(`${entityName} güncelleme sırasında hata:`, error);
-        showToast('danger', 'Bir hata oluştu!');
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
     });
-}
-
-
-
-// Toast bildirim fonksiyonu
-function showToast(type, message) {
-    const toastContainer = document.getElementById('toast-container');
-
-    const toast = document.createElement('div');
-    toast.classList.add('toast', 'fade', 'show', `bg-${type}`, 'text-white');
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    toast.innerHTML = `<div class="toast-body">${message}</div>`;
-
-    toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
 }

@@ -25,6 +25,9 @@ builder.Services.AddScoped<IDerslikService, DerslikManager>();
 builder.Services.AddScoped<ISinavDetayDal, EfSinavDetayDal>();
 builder.Services.AddScoped<ISinavDetayService, SinavDetayManager>();
 
+builder.Services.AddScoped<ISinavDerslikDal, EfSinavDerslikDal>();
+builder.Services.AddScoped<ISinavDerslikService, SinavDerslikManager>();
+
 
 var app = builder.Build();
 

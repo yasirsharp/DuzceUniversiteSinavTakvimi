@@ -2,7 +2,7 @@
 
 namespace Entity.DTOs
 {
-    public class SinavDetayDTO:IDto
+    public class SinavDetayDTO : IDto
     {
         public int Id { get; set; }
         public string DersAd { get; set; }
@@ -14,5 +14,4 @@ namespace Entity.DTOs
         public DateTime SinavTarihi { get; set; }
         public TimeOnly SinavSaati { get; set; }
     }
-
 }

@@ -1,163 +1,283 @@
-﻿function initializeDeleteButtons(entityName) {
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const itemId = this.getAttribute('data-id');
-            const itemName = this.getAttribute('data-name');
-            if (confirm(`Bu ${itemName} silmek istediğinizden emin misiniz?`)) {
-                fetch(`/${entityName}/Delete`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: itemId })
-                }).then(response => {
-                    if (response.ok) {
-                        showToast('success', `${entityName} başarıyla silindi!`);
-                        location.reload();
-                    } else {
-                        showToast('danger', `${entityName} silme işlemi başarısız oldu!`);
-                    }
-                }).catch(error => {
-                    console.error(`${entityName} silme sırasında hata:`, error);
-                    showToast('danger', 'Bir hata oluştu!');
-                });
-            }
+﻿document.addEventListener('DOMContentLoaded', function () {
+    const entityName = 'Derslik';
+
+    initializeDeleteButtons(entityName);
+    initializeAddButton(entityName);
+    initializeEditButtons(entityName);
+});
+
+// Silme işlemi
+function initializeDeleteButtons(entityName) {
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: `"${name}" dersliğini silmek istediğinize emin misiniz?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, Sil!',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteEntity(id, entityName);
+                }
+            });
         });
     });
 }
 
-function initializeAddButton(entityName) {
-    document.getElementById("addRowBtn").addEventListener("click", function () {
-        document.getElementById("inputRow").style.display = "table-row-group";
-    });
-
-    document.getElementById("submitBtn").addEventListener("click", function () {
-        var ad = document.getElementById("newAd").value;
-        var kapasite = document.getElementById("newKapasite").value;
-
-        if (ad && kapasite) {
-            var entity = { ad: ad, kapasite: parseInt(kapasite) };
-
-            fetch(`/${entityName}/Add`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(entity)
-            }).then(response => {
-                if (response.ok) {
-                    showToast('success', `${entityName} başarıyla eklendi!`);
-                    location.reload();
-                } else {
-                    showToast('danger', `${entityName} eklenirken bir hata oluştu!`);
-                }
-            }).catch(error => {
-                console.error("Hata:", error);
-                showToast('danger', `Bir hata oluştu: ${error.message}`);
+// API işlemleri
+function deleteEntity(id, entityName) {
+    fetch(`/${entityName}/Delete/${id}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
             });
+            document.querySelector(`tr[data-id="${id}"]`).remove();
         } else {
-            showToast('danger', 'Lütfen gerekli alanları doldurun!');
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
         }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
     });
 }
 
+// Ekleme işlemi
+function initializeAddButton(entityName) {
+    const inputRow = document.getElementById("inputRow");
+    const tableBody = document.getElementById("tableBody");
+    
+    // Ekle butonuna tıklandığında
+    document.getElementById("addRowBtn").addEventListener("click", function () {
+        // Input satırını göster ve en üste taşı
+        inputRow.style.display = "table-row-group";
+        // Input row'u tablonun en üstüne taşı
+        tableBody.parentNode.insertBefore(inputRow, tableBody);
+        // Input alanlarını temizle
+        document.getElementById('newAd').value = '';
+        document.getElementById('newKapasite').value = '';
+    });
+
+    // İptal butonuna tıklandığında
+    document.getElementById("cancelNewRowBtn").addEventListener("click", function() {
+        // Input satırını gizle
+        inputRow.style.display = "none";
+        // Input alanlarını temizle
+        document.getElementById('newAd').value = '';
+        document.getElementById('newKapasite').value = '';
+        
+        // İptal edildiğini bildir
+        Swal.fire({
+            icon: 'info',
+            title: 'İptal Edildi',
+            text: 'Ekleme işlemi iptal edildi.',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    });
+
+    // Kaydet butonuna tıklandığında
+    document.getElementById("submitBtn").addEventListener("click", function() {
+        const newAd = document.getElementById('newAd').value;
+        const newKapasite = document.getElementById('newKapasite').value;
+        
+        if (!newAd || !newKapasite) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Uyarı!',
+                text: 'Lütfen tüm alanları doldurunuz.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            return;
+        }
+
+        if (newKapasite <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Uyarı!',
+                text: 'Kapasite 0\'dan büyük olmalıdır.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            return;
+        }
+
+        addEntity(newAd, newKapasite, entityName);
+    });
+}
+
+// Düzenleme işlemi
 function initializeEditButtons(entityName) {
-    document.querySelector('#dataTable').addEventListener('click', function (event) {
-        if (event.target.classList.contains('edit-btn')) {
-            const button = event.target;
-            const itemId = button.getAttribute('data-id');
-            const row = button.closest('tr');
-            const itemNameCell = row.querySelector('td:nth-child(2)');
-            const itemCapacityCell = row.querySelector('td:nth-child(3)');
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const currentName = this.getAttribute('data-name');
+            const currentCapacity = this.getAttribute('data-capacity');
 
-            const initialName = button.getAttribute('data-name');
-            const initialCapacity = button.getAttribute('data-capacity');
-
-            const inputName = document.createElement('input');
-            inputName.type = 'text';
-            inputName.classList.add('form-control');
-            inputName.value = initialName;
-
-            const inputCapacity = document.createElement('input');
-            inputCapacity.type = 'number';
-            inputCapacity.classList.add('form-control');
-            inputCapacity.value = initialCapacity;
-
-            itemNameCell.innerHTML = '';
-            itemNameCell.appendChild(inputName);
-
-            itemCapacityCell.innerHTML = '';
-            itemCapacityCell.appendChild(inputCapacity);
-
-            button.style.display = 'none';
-
-            const saveButton = document.createElement('button');
-            saveButton.classList.add('btn', 'btn-success', 'btn-sm');
-            saveButton.textContent = 'Kaydet';
-
-            const cancelButton = document.createElement('button');
-            cancelButton.classList.add('btn', 'btn-secondary', 'btn-sm');
-            cancelButton.textContent = 'İptal';
-
-            const actionCell = row.querySelector('td:nth-child(4)');
-            actionCell.innerHTML = '';
-            actionCell.appendChild(saveButton);
-            actionCell.appendChild(cancelButton);
-
-            saveButton.addEventListener('click', function () {
-                var updatedEntity = {
-                    id: itemId,
-                    ad: inputName.value,
-                    kapasite: parseInt(inputCapacity.value)
-                };
-
-                fetch(`/${entityName}/Update`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updatedEntity)
-                }).then(response => {
-                    if (response.ok) {
-                        showToast('success', `${entityName} başarıyla güncellendi!`);
-                        location.reload();
-                    } else {
-                        showToast('danger', `${entityName} güncelleme işlemi başarısız oldu!`);
+            Swal.fire({
+                title: 'Derslik Düzenle',
+                html: `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <label for="swal-input1" style="width: 80px;">Derslik Adı:</label>
+                        <input id="swal-input1" class="swal2-input" placeholder="Derslik adı" value="${currentName}" style="margin: 0;">
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <label for="swal-input2" style="width: 80px;">Kapasite:</label>
+                        <input id="swal-input2" class="swal2-input" type="number" placeholder="Kapasite" value="${currentCapacity}" style="margin: 0;">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Güncelle',
+                cancelButtonText: 'İptal',
+                preConfirm: () => {
+                    const ad = document.getElementById('swal-input1').value;
+                    const kapasite = document.getElementById('swal-input2').value;
+                    if (!ad || !kapasite) {
+                        Swal.showValidationMessage('Lütfen tüm alanları doldurunuz');
+                        return false;
                     }
-                }).catch(error => {
-                    console.error(`${entityName} güncelleme sırasında hata:`, error);
-                    showToast('danger', 'Bir hata oluştu!');
-                });
+                    if (kapasite <= 0) {
+                        Swal.showValidationMessage('Kapasite 0\'dan büyük olmalıdır');
+                        return false;
+                    }
+                    return { ad, kapasite }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    updateEntity(id, result.value.ad, result.value.kapasite, entityName);
+                }
             });
-
-            cancelButton.addEventListener('click', function () {
-                itemNameCell.innerHTML = initialName;
-                itemCapacityCell.innerHTML = initialCapacity;
-
-                actionCell.innerHTML = '';
-                actionCell.appendChild(button);
-
-                showToast('danger', 'Düzenleme iptal edildi!');
-            });
-        }
+        });
     });
 }
 
-function showToast(type, message) {
-    const toastContainer = document.getElementById('toast-container') || document.body.appendChild(document.createElement('div'));
-    toastContainer.id = 'toast-container';
+function addEntity(name, capacity, entityName) {
+    fetch(`/${entityName}/Add`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ Ad: name, Kapasite: parseInt(capacity) })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            location.reload();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    });
+}
 
-    const toast = document.createElement('div');
-    toast.classList.add('toast', 'fade', 'show', `bg-${type}`, 'text-white');
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `<div class="toast-body">${message}</div>`;
-
-    toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
+function updateEntity(id, newName, newCapacity, entityName) {
+    fetch(`/${entityName}/Update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ Id: id, Ad: newName, Kapasite: parseInt(newCapacity) })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            location.reload();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    });
 }

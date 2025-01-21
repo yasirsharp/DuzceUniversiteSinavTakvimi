@@ -7,5 +7,6 @@ namespace DataAccess.Abstract
     public interface IDBAPDal:IEntityRepository<DersBolumAkademikPersonel>
     {
         List<DersBolumAkademikPersonelDTO> GetDetails();
+        DersBolumAkademikPersonelDTO GetDetail(int dbapId);
     }
 }

@@ -9,6 +9,7 @@ namespace Business.Abstract
     {
         IDataResult<List<DersBolumAkademikPersonel>> GetAll();
         IDataResult<List<DersBolumAkademikPersonelDTO>> GetAllDetails();
+        IDataResult<DersBolumAkademikPersonelDTO> GetDetail(int dbapId);
         IDataResult<DersBolumAkademikPersonel> GetById(int dbapId);
         IResult Add(DersBolumAkademikPersonel dersBolumAkademikPersonel);
         IResult Delete(DersBolumAkademikPersonel dersBolumAkademikPersonel);

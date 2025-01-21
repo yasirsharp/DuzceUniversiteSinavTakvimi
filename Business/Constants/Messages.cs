@@ -31,8 +31,12 @@ namespace Business.Constants
 
         public static string SomethingWrong = "Bir şeyler yanlış gidiyor. @?!!#";
 
-        public static string SinavDetayAdded { get; internal set; }
-        public static string SinavDetayDeleted { get; internal set; }
-        public static string SinavDetayUpdated { get; internal set; }
+        public static string SinavDetayAdded ="Sinav Detay Eşleştirmesi eklendi.";
+        public static string SinavDetayDeleted ="Sinav Detay Eşleştirmesi silindi.";
+        public static string SinavDetayUpdated ="Sinav Detay Eşleştirmesi güncellendi.";
+
+        public static string SinavDerslikAdded ="Sinav Derslik Eşleştirmesi eklendi.";
+        public static string SinavDerslikDeleted = "Sinav Derslik Eşleştirmesi silindi.";
+        public static string SinavDerslikUpdated ="Sinav Derslik Eşleştirmesi güncellendi.";
     }
 }

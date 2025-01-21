@@ -1,197 +1,265 @@
-﻿function initializeDeleteButtons(entityName) {
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const itemId = this.getAttribute('data-id');
-            if (confirm(`Bu kaydı silmek istediğinizden emin misiniz?`)) {
-                fetch(`/${entityName}/Delete`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: itemId })
-                }).then(response => {
-                    if (response.ok) {
-                        showToast('success', `${entityName} başarıyla silindi!`);
-                        location.reload();
-                    } else {
-                        showToast('danger', `${entityName} silme işlemi başarısız oldu!`);
-                    }
-                }).catch(error => {
-                    console.error(`${entityName} silme sırasında hata:`, error);
-                    showToast('danger', 'Bir hata oluştu!');
-                });
-            }
+﻿document.addEventListener('DOMContentLoaded', function () {
+    const entityName = 'AkademikPersonel';
+
+    initializeDeleteButtons(entityName);
+    initializeAddButton(entityName);
+    initializeEditButtons(entityName);
+});
+
+// Silme işlemi
+function initializeDeleteButtons(entityName) {
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+            const title = this.getAttribute('data-title');
+
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: `"${title} ${name}" personelini silmek istediğinize emin misiniz?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, Sil!',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteEntity(id, entityName);
+                }
+            });
         });
     });
 }
 
-function initializeAddButton(entityName) {
-    document.getElementById("addRowBtn").addEventListener("click", function () {
-        document.getElementById("inputRow").style.display = "table-row-group";
-    });
-
-    document.getElementById("submitBtn").addEventListener("click", function () {
-        var ad = document.getElementById("newAd").value;
-        var unvan = document.getElementById("newUnvan").value;
-
-        if (ad && unvan) {
-            var entity = {
-                ad: ad,
-                unvan: unvan
-            };
-
-            fetch(`/${entityName}/Add`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(entity)
-            }).then(response => {
-                if (response.ok) {
-                    showToast('success', `${entityName} başarıyla eklendi!`);
-                    location.reload();
-                } else {
-                    showToast('danger', `${entityName} eklenirken bir hata oluştu!`);
-                }
-            }).catch(error => {
-                console.error("Hata:", error);
-                showToast('danger', `Bir hata oluştu: ${error.message}`);
+// API işlemleri
+function deleteEntity(id, entityName) {
+    fetch(`/${entityName}/Delete/${id}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
             });
+            document.querySelector(`tr[data-id="${id}"]`).remove();
         } else {
-            showToast('danger', 'Lütfen tüm alanları doldurun!');
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
         }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
     });
 }
 
+// Ekleme işlemi
+function initializeAddButton(entityName) {
+    const inputRow = document.getElementById("inputRow");
+    const tableBody = document.getElementById("tableBody");
+    
+    // Ekle butonuna tıklandığında
+    document.getElementById("addRowBtn").addEventListener("click", function () {
+        // Input satırını göster ve en üste taşı
+        inputRow.style.display = "table-row-group";
+        // Input row'u tablonun en üstüne taşı
+        tableBody.parentNode.insertBefore(inputRow, tableBody);
+        // Input alanlarını temizle
+        document.getElementById('newAd').value = '';
+        document.getElementById('newUnvan').value = '';
+    });
+
+    // İptal butonuna tıklandığında
+    document.getElementById("cancelNewRowBtn").addEventListener("click", function() {
+        // Input satırını gizle
+        inputRow.style.display = "none";
+        // Input alanlarını temizle
+        document.getElementById('newAd').value = '';
+        document.getElementById('newUnvan').value = '';
+        
+        // İptal edildiğini bildir
+        Swal.fire({
+            icon: 'info',
+            title: 'İptal Edildi',
+            text: 'Ekleme işlemi iptal edildi.',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    });
+
+    // Kaydet butonuna tıklandığında
+    document.getElementById("submitBtn").addEventListener("click", function() {
+        const newAd = document.getElementById('newAd').value;
+        const newUnvan = document.getElementById('newUnvan').value;
+        
+        if (!newAd || !newUnvan) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Uyarı!',
+                text: 'Lütfen tüm alanları doldurunuz.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            return;
+        }
+        addEntity(newAd, newUnvan, entityName);
+    });
+}
+
+// Düzenleme işlemi
 function initializeEditButtons(entityName) {
-    document.querySelector('#dataTable').addEventListener('click', function (event) {
-        if (event.target.classList.contains('edit-btn')) {
-            const button = event.target;
-            const itemId = button.getAttribute('data-id');
-            const row = button.closest('tr');
-            const itemNameCell = row.querySelector('td:nth-child(2)');
-            const itemTitleCell = row.querySelector('td:nth-child(3)');
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const currentName = this.getAttribute('data-name');
+            const currentTitle = this.getAttribute('data-title');
 
-            const initialName = button.getAttribute('data-name');
-            const initialTitle = button.getAttribute('data-title');
-
-            const inputName = document.createElement('input');
-            inputName.type = 'text';
-            inputName.classList.add('form-control');
-            inputName.value = initialName;
-
-            const inputTitle = document.createElement('input');
-            inputTitle.type = 'text';
-            inputTitle.classList.add('form-control');
-            inputTitle.value = initialTitle;
-
-            itemNameCell.innerHTML = '';
-            itemNameCell.appendChild(inputName);
-
-            itemTitleCell.innerHTML = '';
-            itemTitleCell.appendChild(inputTitle);
-
-            button.style.display = 'none';
-
-            const saveButton = document.createElement('button');
-            saveButton.classList.add('btn', 'btn-success', 'btn-sm');
-            saveButton.textContent = 'Kaydet';
-
-            const cancelButton = document.createElement('button');
-            cancelButton.classList.add('btn', 'btn-danger', 'btn-sm');
-            cancelButton.textContent = 'İptal';
-
-            const actionCell = row.querySelector('td:nth-child(4)');
-            actionCell.innerHTML = '';
-            actionCell.appendChild(saveButton);
-            actionCell.appendChild(cancelButton);
-
-            saveButton.addEventListener('click', function () {
-                var _entity = {
-                    id: itemId,
-                    ad: inputName.value,
-                    unvan: inputTitle.value
-                };
-
-                updateItem(_entity, entityName);
-
-                itemNameCell.innerHTML = inputName.value;
-                itemTitleCell.innerHTML = inputTitle.value;
-
-                const newEditButton = document.createElement('button');
-                newEditButton.classList.add('btn', 'btn-warning', 'btn-sm', 'edit-btn');
-                newEditButton.textContent = 'Düzenle';
-                newEditButton.setAttribute('data-id', itemId);
-                newEditButton.setAttribute('data-name', inputName.value);
-                newEditButton.setAttribute('data-title', inputTitle.value);
-
-                const newDeleteButton = document.createElement('button');
-                newDeleteButton.classList.add('btn', 'btn-danger', 'btn-sm', 'delete-btn');
-                newDeleteButton.textContent = 'Sil';
-                newDeleteButton.setAttribute('data-id', itemId);
-
-                actionCell.innerHTML = '';
-                actionCell.appendChild(newEditButton);
-                actionCell.appendChild(newDeleteButton);
-
-                showToast('success', `${entityName} başarıyla güncellendi!`);
+            Swal.fire({
+                title: 'Akademik Personel Düzenle',
+                html: `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <label for="swal-input1" style="width: 60px;">Ad:</label>
+                        <input id="swal-input1" class="swal2-input" placeholder="Ad" value="${currentName}" style="margin: 0;">
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <label for="swal-input2" style="width: 60px;">Unvan:</label>
+                        <input id="swal-input2" class="swal2-input" placeholder="Unvan" value="${currentTitle}" style="margin: 0;">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Güncelle',
+                cancelButtonText: 'İptal',
+                preConfirm: () => {
+                    const ad = document.getElementById('swal-input1').value;
+                    const unvan = document.getElementById('swal-input2').value;
+                    if (!ad || !unvan) {
+                        Swal.showValidationMessage('Lütfen tüm alanları doldurunuz');
+                    }
+                    return { ad, unvan }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    updateEntity(id, result.value.ad, result.value.unvan, entityName);
+                }
             });
-
-            cancelButton.addEventListener('click', function () {
-                itemNameCell.innerHTML = initialName;
-                itemTitleCell.innerHTML = initialTitle;
-
-                const newEditButton = document.createElement('button');
-                newEditButton.classList.add('btn', 'btn-warning', 'btn-sm', 'edit-btn');
-                newEditButton.textContent = 'Düzenle';
-                newEditButton.setAttribute('data-id', itemId);
-                newEditButton.setAttribute('data-name', initialName);
-                newEditButton.setAttribute('data-title', initialTitle);
-
-                actionCell.innerHTML = '';
-                actionCell.appendChild(newEditButton);
-
-                showToast('danger', 'Düzenleme iptal edildi!');
-            });
-        }
+        });
     });
 }
 
-function updateItem(item, entityName) {
+function addEntity(name, title, entityName) {
+    fetch(`/${entityName}/Add`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ Ad: name, Unvan: title })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            location.reload();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    });
+}
+
+function updateEntity(id, newName, newTitle, entityName) {
     fetch(`/${entityName}/Update`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(item)
-    }).then(response => {
-        if (response.ok) {
-            showToast('success', `${entityName} başarıyla güncellendi!`);
+        body: JSON.stringify({ Id: id, Ad: newName, Unvan: newTitle })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            location.reload();
         } else {
-            showToast('danger', `${entityName} güncelleme işlemi başarısız oldu!`);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: result.message,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
         }
-    }).catch(error => {
-        console.error(`${entityName} güncelleme sırasında hata:`, error);
-        showToast('danger', 'Bir hata oluştu!');
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Bir hata oluştu: ' + error,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+        });
     });
-}
-
-function showToast(type, message) {
-    const toastContainer = document.getElementById('toast-container');
-
-    const toast = document.createElement('div');
-    toast.classList.add('toast', 'fade', 'show', `bg-${type}`, 'text-white');
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    toast.innerHTML = `<div class="toast-body">${message}</div>`;
-
-    toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
 }

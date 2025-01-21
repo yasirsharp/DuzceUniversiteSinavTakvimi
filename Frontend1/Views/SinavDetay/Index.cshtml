@@ -9,286 +9,217 @@
     var derslikler = ViewData["Derslikler"] as IDataResult<List<Derslik>>;
 
 }
+
+@section Styles {
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+}
+
 <style>
+    .calendar-container {
+        height: calc(100vh - 100px);
+        overflow: hidden;
+    }
+
+    .sticky-sidebar {
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+    }
+
+    .fc {
+        height: 100% !important;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+    }
+
+    .fc-timegrid-slot {
+        height: 50px !important;
+    }
+
+    .fc-timegrid-slot-lane {
+        border-bottom: 1px solid #ddd !important;
+    }
+
+    .fc-timegrid-slots td {
+        height: 50px !important;
+        border-bottom: 1px solid #ddd !important;
+    }
+
+    .fc-col-header-cell {
+        background-color: #f8f9fa;
+        padding: 8px !important;
+    }
+
+    .fc-timegrid-axis {
+        padding: 10px !important;
+    }
+
+    .fc-button-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
     .fc-event {
+        margin: 2px;
+        padding: 3px;
+    }
+
+    .fc-toolbar-chunk {
+        display: flex;
+        gap: 5px;
+    }
+
+    .fc .fc-toolbar {
         padding: 10px;
-        margin-bottom: 10px;
-        font-size: 14px;
-        border-radius: 5px;
-        cursor: pointer;
     }
 
-    /* Örnek bölüm renkleri */
-    .bolum-matematik {
-        background-color: #ffcccb; /* Kırmızı ton */
-        border: 1px solid #ff8888;
+    .fc .fc-toolbar-title {
+        font-size: 1.25rem;
+        margin: 0;
     }
 
-    .bolum-bilgisayar {
-        background-color: #cce5ff; /* Mavi ton */
-        border: 1px solid #80bdff;
-    }
-
-    .bolum-fizik {
-        background-color: #d4edda; /* Yeşil ton */
-        border: 1px solid #a3d5a2;
-    }
-
-    .bolum-kimya {
-        background-color: #fff3cd; /* Sarı ton */
-        border: 1px solid #ffecb5;
-    }
-
-    /* Kartın içeriği için stiller */
-    .fc-event .ders-ad {
+    .external-event {
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.125), 0 1px 3px rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        cursor: move;
         font-weight: bold;
-        font-size: 16px;
-        margin-bottom: 5px;
+        margin-bottom: 10px;
+        padding: 10px;
+        color: #fff;
+    }
+    
+    /* Ders renkleri */
+    .bolum-color-1 { background-color: #2196F3; }  /* Bilgisayar - Mavi */
+    .bolum-color-2 { background-color: #F44336; }  /* İnşaat - Kırmızı */
+    .bolum-color-3 { background-color: #4CAF50; }  /* Elektronik - Yeşil */
+    .bolum-color-4 { background-color: #9C27B0; }  /* Alternatif - Mor */
+    .bolum-color-5 { background-color: #FF9800; }  /* Diğer - Turuncu */
+
+    .bolum-baslik {
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 10px;
+        margin: 15px 0 10px 0;
+        border-left: 4px solid #2c3e50;
+        background-color: #f8f9fa;
+        border-radius: 0 4px 4px 0;
     }
 
-    .fc-event .akademik-personel {
-        font-size: 13px;
-        color: #555;
+    .bolum-grup {
+        margin-bottom: 20px;
+    }
+
+    .bolum-grup:first-child .bolum-baslik {
+        margin-top: 0;
     }
 </style>
 
-<style>
-    #calendar {
-        max-width: 100%;
-        margin:  0 auto;
-    }
-
-    .content-wrapper {
-        margin-left: 0 !important;
-    }
-</style>  <!-- fullCalendar -->
-<link rel="stylesheet" href="https://adminlte.io/themes/v3/plugins/fullcalendar/main.css">
-<!-- Theme style -->
-<link rel="stylesheet" href="https://adminlte.io/themes/v3/dist/css/adminlte.min.css?v=3.2.0">
-
-<div class="row d-flex justify-content-around">
-    <div class="content-wrapper" @* style="margin-left:0;" *@>
-        <!-- Content Header (Page header) -->
-        <section class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <h1>Calendar</h1>
+<div class="container-fluid mt-4">
+    @Html.AntiForgeryToken()
+    <div class="row">
+        <div class="col-md-3">
+            <div class="sticky-sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Sürüklenebilir Dersler</h3>
                     </div>
-                    <div class="col-sm-6">
-                        <ol class="breadcrumb float-sm-right">
-                            <li class="breadcrumb-item"><a href="#">Home</a></li>
-                            <li class="breadcrumb-item active">Calendar</li>
-                        </ol>
-                    </div>
-                </div>
-            </div><!-- /.container-fluid -->
-        </section>
-
-        <!-- Main content -->
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="sticky-top mb-3">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h4 class="card-title">Draggable Events</h4>
-                                </div>
-                                <div class="card-body">
-                                    <select class="form-control js-example-basic-multiple" name="states[]" multiple="multiple">
-                                        @foreach (var derslik in derslikler.Data)
-                                        {
-                                            <option value="@derslik.Id">@derslik.Ad (@derslik.Kapasite)</option>
-                                        }
-                                    </select>
-                                    <!-- the events -->
-                                    <div id="external-events">
-                                        @foreach (var item in dbap_detail.Data)
-                                        {
-                                            <div class="external-event bg-success" data-id="@item.Id">
-                                                <h5>@item.DersAd</h5> <br />
-                                                <p>@item.AkademikPersonelAd</p>
-                                            </div>
-                                        }
+                    <div class="card-body">
+                        <!-- Sol taraftaki derslik seçimi -->
+                        <div class="form-group mb-3">
+                            <label>Derslik Seçimi</label>
+                            <select id="mainDerslikFilter" class="form-control js-example-basic-multiple">
+                                @foreach (var derslik in derslikler.Data)
+                                {
+                                    <option value="@derslik.Id">@derslik.Ad (@derslik.Kapasite)</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <!-- Sürüklenebilir Etkinlikler -->
+                        <div id="external-events">
+                            @{
+                                var bolumRenkMap = new Dictionary<int, string>();
+                                var renkIndex = 1;
+                                var gruplanmisDersler = dbap_detail.Data
+                                    .GroupBy(x => x.BolumId)
+                                    .Select(g => new
+                                    {
+                                        BolumId = g.Key,
+                                        BolumAd = g.First().BolumAd,
+                                        Dersler = g.GroupBy(d => d.DersId)
+                                                  .Select(d => d.First())
+                                                  .OrderBy(d => d.DersAd)
+                                    })
+                                    .OrderBy(x => x.BolumAd);
+                            }
+                            
+                            @foreach (var bolum in gruplanmisDersler)
+                            {
+                                if (!bolumRenkMap.ContainsKey(bolum.BolumId))
+                                {
+                                    bolumRenkMap[bolum.BolumId] = $"bolum-color-{(renkIndex++ % 5) + 1}";
+                                }
+                                
+                                <div class="bolum-grup">
+                                    <div class="bolum-baslik">
+                                        <i class="bi bi-building me-2"></i>@bolum.BolumAd
                                     </div>
+                                    @foreach (var ders in bolum.Dersler)
+                                    {
+                                        <div class="external-event @bolumRenkMap[bolum.BolumId]" 
+                                             data-id="@ders.Id" 
+                                             data-ders-id="@ders.DersId"
+                                             data-bolum-id="@ders.BolumId"
+                                             data-color="@bolumRenkMap[bolum.BolumId]">
+                                            <h5>@ders.DersAd</h5>
+                                            <p>@ders.AkademikPersonelAd</p>
+                                        </div>
+                                    }
                                 </div>
-                                <!-- /.card-body -->
-                            </div>
+                            }
                         </div>
                     </div>
-                    <!-- /.col -->
-                    <div class="col-md-9">
-                        <div class="card card-primary">
-                            <div class="card-body p-0">
-                                <!-- THE CALENDAR -->
-                                <div id="calendar"></div>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                        <!-- /.card -->
-                    </div>
-                    <!-- /.col -->
                 </div>
-                <!-- /.row -->
-            </div><!-- /.container-fluid -->
-        </section>
-        <!-- /.content -->
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card card-primary calendar-container">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <!-- Buradan derslik filtresini kaldırıyoruz -->
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
     </div>
-    <!-- /.content-wrapper -->
 </div>
 
-<!-- jQuery -->
-<script src="https://adminlte.io/themes/v3/plugins/jquery/jquery.min.js"></script>
+@section Scripts {
+    <!-- jQuery UI -->
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- FullCalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/tr.js'></script>
 
-<!-- jQuery UI -->
-<script src="https://adminlte.io/themes/v3/plugins/jquery-ui/jquery-ui.min.js"></script>
+    <!-- Takvim için gerekli verileri global değişkenlere aktar -->
+    <script>
+        const INITIAL_DATA = {
+            derslikler: @Html.Raw(Json.Serialize(derslikler.Data)),
+            dbapDetail: @Html.Raw(Json.Serialize(dbap_detail.Data)),
+            sinavlar: @Html.Raw(Json.Serialize(sinavs.Data)),
+            akademikPersoneller: @Html.Raw(Json.Serialize(ViewData["AkademikPersoneller"]))
+        };
+    </script>
 
-<!-- Bootstrap -->
-<script src="https://adminlte.io/themes/v3/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-<!-- AdminLTE App -->
-<script src="https://adminlte.io/themes/v3/dist/js/adminlte.min.js?v=3.2.0"></script>
-
-<!-- Moment.js (FullCalendar için gerekli) -->
-<script src="https://adminlte.io/themes/v3/plugins/moment/moment.min.js"></script>
-
-<!-- FullCalendar -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-
-<script>
-    var selectedValues = []; // Seçili öğeler burada tutulacak
-        $(document).ready(function () {
-        $('.js-example-basic-multiple').select2();
-
-        // Seçim değiştiğinde değerleri güncelle
-        $('.js-example-basic-multiple').on('change', function (e) {
-            selectedValues = $(this).val(); // Seçili öğelerin değerlerini alır (dizi olarak)
-            console.log('Seçili öğeler:', selectedValues);
-
-            var sinavlar = @Html.Raw(Json.Serialize(sinavs!.Data)); // C# listesini JavaScript'e aktar
-
-            for (var i = 0; i < sinavlar.length; i++) {
-                // selectedValues.includes() ile seçili derslikId'yi kontrol et
-                console.log(selectedValues.indexOf(sinavlar[i].derslikId));
-                if (selectedValues.indexOf(sinavlar[i].derslikId) != -1) {
-                    console.log("ssss");
-                    calendar.addEvent({
-                        title: sinavlar[i].DersAd + ' - ' + sinavlar[i].BolumAd,
-                        start: sinavlar[i].SinavTarihi,
-                        end: sinavlar[i].SinavTarihi, // Gerekirse bitiş saatini de ekleyebilirsin
-                        backgroundColor: '#f56954',
-                        borderColor: '#f56954',
-                        allDay: false,
-                        description: sinavlar[i].AkademikPersonelAd + ' ' + sinavlar[i].Unvan
-                    }); // Yeni eventleri ekle
-                }
-            }
-
-            console.log(sinavlar);
-
-            // calendar.removeAllEvents(); // Eski eventleri kaldır
-        calendar.render();
-        });
-    });
-
-
-    $(function () {
-        /* Draggable etkinliklerin başlatılması */
-        function ini_events(ele) {
-            ele.each(function () {
-                var eventObject = {
-                    title: $.trim($(this).text()) // Event başlığı
-                };
-
-                $(this).data('eventObject', eventObject);
-
-                $(this).draggable({
-                    zIndex: 1070,
-                    revert: true,           // Sürükleme sonrası eski konumuna dön
-                    revertDuration: 0.4     // Dönüş süresi
-                });
-            });
-        }
-
-        ini_events($('#external-events div.external-event'));
-
-        var Calendar = FullCalendar.Calendar;
-        var Draggable = FullCalendar.Draggable;
-
-        var containerEl = document.getElementById('external-events');
-        var calendarEl = document.getElementById('calendar');
-
-        /* Draggable için ayarlar */
-        new Draggable(containerEl, {
-            itemSelector: '.external-event',
-            eventData: function (eventEl) {
-                var dersAd = eventEl.querySelector('h5')?.innerText.trim();  // Ders adını al
-                var akademikPersonel = eventEl.querySelector('p')?.innerText.trim();  // Akademik personel adını al
-
-                if (!dersAd) {
-                    console.error('Draggable event has no valid title:', eventEl);
-                    return {}; // Eğer title boşsa hata verir ve boş obje döner
-                }
-
-                return {
-                    title: dersAd + ' - ' + akademikPersonel,
-                    backgroundColor: window.getComputedStyle(eventEl, null).getPropertyValue('background-color'),
-                    borderColor: window.getComputedStyle(eventEl, null).getPropertyValue('background-color'),
-                    textColor: window.getComputedStyle(eventEl, null).getPropertyValue('color')
-                };
-            }
-        });
-
-        /* Takvimin başlatılması */
-        var calendar = new Calendar(calendarEl, {
-            initialView: 'dayGridWeek',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            themeSystem: 'bootstrap',
-            events: [], // Başlangıçta boş event listesi
-            editable: true,
-            droppable: true,
-            drop: function (info) {
-                console.log(info);
-                console.log(info.draggedEl.getAttribute("data-id"));
-                if (!info.event || !info.event.title) {
-                    console.error('Event title is undefined or missing:', info);
-                    return;
-                }
-                const eventData = {
-                    DBAPId: 1, // Örnek bir DBAPId
-                    DerslikId: 1, // Örnek bir DerslikId
-                    SinavTarihi: info.event.start.toISOString().split('T')[0],
-                    SinavSaati: info.event.start.toISOString().split('T')[1]
-                };
-
-                // AJAX isteği gönder
-                $.ajax({
-                    url: '/sinavdetay/add',
-                    type: 'POST',
-                    data: eventData,
-                    success: function (response) {
-                        console.log('Event added successfully:', response);
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error adding event:', error);
-                    }
-                });
-            }
-        });
-
-        calendar.setOption('locale', 'tr');
-        calendar.render();
-    });
-</script>
-
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<!-- FullCalendar CSS -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-<!-- FullCalendar JS -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <!-- Takvim yönetimi için özel JavaScript -->
+    <script src="~/js/sinavTakvimi.js"></script>
+}
