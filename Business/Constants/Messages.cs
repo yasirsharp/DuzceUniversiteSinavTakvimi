@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.Entities.Concrete;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,5 +39,27 @@ namespace Business.Constants
         public static string SinavDerslikAdded ="Sinav Derslik Eşleştirmesi eklendi.";
         public static string SinavDerslikDeleted = "Sinav Derslik Eşleştirmesi silindi.";
         public static string SinavDerslikUpdated ="Sinav Derslik Eşleştirmesi güncellendi.";
+
+        public static string UserAdded = "Kullanıcı başarıyla eklendi.";
+        public static string UserDeleted = "Kullanıcı silindi.";
+        public static string UserNotFound = "Kullanıcı bulunamadı.";
+        public static string UserClaimsNotFound = "Kullanıcıya ait yetkiler bulunamadı.";
+
+        public static string AccessTokenCreated = "Access token başarıyla oluşturuldu.";
+        public static string UserAlreadyExists = "Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.";
+        public static string SuccessfulLogin = "Giriş başarılı.";
+        public static string UserRegistered = "Kullanıcı başarıyla kaydedildi.";
+        public static string PasswordError = "Şifre hatalı.";
+        
+        public static string OperationClaimAdded = "Yetki başarıyla eklendi.";
+        public static string OperationClaimUpdated = "Yetki başarıyla güncellendi.";
+        public static string OperationClaimListed = "Yetkiler listelendi.";
+        public static string OperationClaimDeleted = "Yetki başarıyla silindi.";
+        
+        public static string UserOperationClaimAdded = "Kullanıcı yetkisi başarıyla eklendi.";
+        public static string UserOperationClaimDeleted = "Kullanıcı yetkisi başarıyla silindi.";
+        public static string UserOperationClaimListed = "Kullanıcı yetkileri listelendi.";
+        public static string UserOperationClaimUpdated = "Kullanıcı yetkisi başarıyla güncellendi.";
+
     }
 }

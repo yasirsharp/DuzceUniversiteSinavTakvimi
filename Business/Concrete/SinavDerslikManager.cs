@@ -100,6 +100,19 @@ namespace Business.Concrete
             }
         }
 
+        public IDataResult<List<SinavDerslik>> GetBySinavDetayId(int sinavDetayId)
+        {
+            try
+            {
+                var result = _sinavDerslikDal.GetBySinavDetayId(sinavDetayId);
+                return new SuccessDataResult<List<SinavDerslik>>(result);
+            }
+            catch (Exception err)
+            {
+                return new ErrorDataResult<List<SinavDerslik>>(err.Message);
+            }
+        }
+
         public IResult Update(SinavDerslik sinavDerslik)
         {
             try

@@ -7,5 +7,6 @@ namespace DataAccess.Abstract
     {
         List<SinavDetay> GetByDerslikId(int derslikId);
         List<SinavDetay> GetByGozetmenId(int GozetmenId);
+        List<SinavDerslik> GetBySinavDetayId(int sinavDetayId);
     }
 }

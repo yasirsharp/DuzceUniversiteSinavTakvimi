@@ -1,122 +1,179 @@
 ﻿@using Core.Utilities.Results
 @using Entity.Concrete
 @using Entity.DTOs
+@using Microsoft.AspNetCore.Html
 @{
-    ViewData["Title"] = "Sınav Detay";
+    ViewData["Title"] = $"Sınav Detay {ViewData["BolumID"]}";
     var dbap = ViewData["DBAP"] as IDataResult<List<DersBolumAkademikPersonel>>;
     var dbap_detail = ViewData["DBAPDetail"] as IDataResult<List<DersBolumAkademikPersonelDTO>>;
     var sinavs = ViewData["SinavDetay"] as IDataResult<List<SinavDetayDTO>>;
     var derslikler = ViewData["Derslikler"] as IDataResult<List<Derslik>>;
-
 }
 
 @section Styles {
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .calendar-container {
+            height: calc(100vh - 100px);
+            overflow: hidden;
+        }
+
+        .sticky-sidebar {
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .fc {
+            height: 100% !important;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+        }
+
+        .fc-timegrid-slot {
+            height: 50px !important;
+        }
+
+        .fc-timegrid-slot-lane {
+            border-bottom: 1px solid #ddd !important;
+        }
+
+        .fc-timegrid-slots td {
+            height: 50px !important;
+            border-bottom: 1px solid #ddd !important;
+        }
+
+        .fc-col-header-cell {
+            background-color: #f8f9fa;
+            padding: 8px !important;
+        }
+
+        .fc-timegrid-axis {
+            padding: 10px !important;
+        }
+
+        .fc-button-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .fc-event {
+            margin: 2px;
+            padding: 3px;
+        }
+
+        .fc-toolbar-chunk {
+            display: flex;
+            gap: 5px;
+        }
+
+        .fc .fc-toolbar {
+            padding: 10px;
+        }
+
+        .fc .fc-toolbar-title {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .external-event {
+            box-shadow: 0 0 1px rgba(0, 0, 0, 0.125), 0 1px 3px rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            cursor: move;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            color: #fff;
+        }
+
+        .bolum-baslik {
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 10px;
+            margin: 15px 0 0 0;
+            border-left: 4px solid #2c3e50;
+            background-color: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bolum-baslik:hover {
+            background-color: #e9ecef;
+            /* transform: translateX(5px); */
+        }
+
+        .bolum-baslik i.toggle-icon {
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            font-size: 1.1rem;
+        }
+
+        .bolum-baslik.collapsed i.toggle-icon {
+            transform: rotate(-180deg);
+        }
+
+        .bolum-dersler {
+            max-height: 1000px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform-origin: top;
+            transform: scaleY(1);
+            margin-top: 10px;
+        }
+
+        .bolum-dersler.collapsed {
+            max-height: 0;
+            opacity: 0;
+            transform: scaleY(0);
+            margin-top: 0;
+        }
+
+        .external-event {
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        @@keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .bolum-grup {
+            margin-bottom: 20px;
+        }
+
+        .bolum-grup:first-child .bolum-baslik {
+            margin-top: 0;
+        }
+
+        .export-button {
+            margin-left: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .export-button:hover {
+            background-color: #218838;
+        }
+    </style>
 }
-
-<style>
-    .calendar-container {
-        height: calc(100vh - 100px);
-        overflow: hidden;
-    }
-
-    .sticky-sidebar {
-        position: sticky;
-        top: 20px;
-        max-height: calc(100vh - 120px);
-        overflow-y: auto;
-    }
-
-    .fc {
-        height: 100% !important;
-        background-color: #fff;
-        padding: 15px;
-        border-radius: 4px;
-        box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
-    }
-
-    .fc-timegrid-slot {
-        height: 50px !important;
-    }
-
-    .fc-timegrid-slot-lane {
-        border-bottom: 1px solid #ddd !important;
-    }
-
-    .fc-timegrid-slots td {
-        height: 50px !important;
-        border-bottom: 1px solid #ddd !important;
-    }
-
-    .fc-col-header-cell {
-        background-color: #f8f9fa;
-        padding: 8px !important;
-    }
-
-    .fc-timegrid-axis {
-        padding: 10px !important;
-    }
-
-    .fc-button-primary {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-    }
-
-    .fc-event {
-        margin: 2px;
-        padding: 3px;
-    }
-
-    .fc-toolbar-chunk {
-        display: flex;
-        gap: 5px;
-    }
-
-    .fc .fc-toolbar {
-        padding: 10px;
-    }
-
-    .fc .fc-toolbar-title {
-        font-size: 1.25rem;
-        margin: 0;
-    }
-
-    .external-event {
-        box-shadow: 0 0 1px rgba(0, 0, 0, 0.125), 0 1px 3px rgba(0, 0, 0, 0.2);
-        border-radius: 3px;
-        cursor: move;
-        font-weight: bold;
-        margin-bottom: 10px;
-        padding: 10px;
-        color: #fff;
-    }
-    
-    /* Ders renkleri */
-    .bolum-color-1 { background-color: #2196F3; }  /* Bilgisayar - Mavi */
-    .bolum-color-2 { background-color: #F44336; }  /* İnşaat - Kırmızı */
-    .bolum-color-3 { background-color: #4CAF50; }  /* Elektronik - Yeşil */
-    .bolum-color-4 { background-color: #9C27B0; }  /* Alternatif - Mor */
-    .bolum-color-5 { background-color: #FF9800; }  /* Diğer - Turuncu */
-
-    .bolum-baslik {
-        font-size: 1rem;
-        font-weight: 600;
-        padding: 10px;
-        margin: 15px 0 10px 0;
-        border-left: 4px solid #2c3e50;
-        background-color: #f8f9fa;
-        border-radius: 0 4px 4px 0;
-    }
-
-    .bolum-grup {
-        margin-bottom: 20px;
-    }
-
-    .bolum-grup:first-child .bolum-baslik {
-        margin-top: 0;
-    }
-</style>
 
 <div class="container-fluid mt-4">
     @Html.AntiForgeryToken()
@@ -142,8 +199,6 @@
                         <!-- Sürüklenebilir Etkinlikler -->
                         <div id="external-events">
                             @{
-                                var bolumRenkMap = new Dictionary<int, string>();
-                                var renkIndex = 1;
                                 var gruplanmisDersler = dbap_detail.Data
                                     .GroupBy(x => x.BolumId)
                                     .Select(g => new
@@ -159,26 +214,25 @@
                             
                             @foreach (var bolum in gruplanmisDersler)
                             {
-                                if (!bolumRenkMap.ContainsKey(bolum.BolumId))
-                                {
-                                    bolumRenkMap[bolum.BolumId] = $"bolum-color-{(renkIndex++ % 5) + 1}";
-                                }
-                                
                                 <div class="bolum-grup">
-                                    <div class="bolum-baslik">
-                                        <i class="bi bi-building me-2"></i>@bolum.BolumAd
+                                    <div class="bolum-baslik" onclick="toggleDersler(this)">
+                                        <span>
+                                            <i class="bi bi-building me-2"></i>@bolum.BolumAd
+                                        </span>
+                                        <i class="bi bi-chevron-down toggle-icon"></i>
                                     </div>
-                                    @foreach (var ders in bolum.Dersler)
-                                    {
-                                        <div class="external-event @bolumRenkMap[bolum.BolumId]" 
-                                             data-id="@ders.Id" 
-                                             data-ders-id="@ders.DersId"
-                                             data-bolum-id="@ders.BolumId"
-                                             data-color="@bolumRenkMap[bolum.BolumId]">
-                                            <h5>@ders.DersAd</h5>
-                                            <p>@ders.AkademikPersonelAd</p>
-                                        </div>
-                                    }
+                                    <div class="bolum-dersler">
+                                        @foreach (var ders in bolum.Dersler)
+                                        {
+                                            <div class="external-event" 
+                                                 data-id="@ders.Id" 
+                                                 data-ders-id="@ders.DersId"
+                                                 data-bolum-id="@ders.BolumId">
+                                                <h5>@ders.DersAd</h5>
+                                                <p>@ders.AkademikPersonelAd</p>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -209,6 +263,8 @@
     <!-- FullCalendar -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/tr.js'></script>
+    <!-- SheetJS -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
 
     <!-- Takvim için gerekli verileri global değişkenlere aktar -->
     <script>
@@ -218,6 +274,58 @@
             sinavlar: @Html.Raw(Json.Serialize(sinavs.Data)),
             akademikPersoneller: @Html.Raw(Json.Serialize(ViewData["AkademikPersoneller"]))
         };
+
+        // Renk üretimi için yardımcı fonksiyonlar
+        const generateBolumColor = (bolumId) => {
+            const GOLDEN_RATIO = 0.618033988749895;
+            const hue = (bolumId * GOLDEN_RATIO * 360) % 360;
+            return `hsl(${hue}, 60%, 45%)`;
+        };
+
+        // Sayfa yüklendiğinde bölüm renklerini uygula
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.external-event').forEach(event => {
+                const bolumId = event.dataset.bolumId;
+                event.style.backgroundColor = generateBolumColor(bolumId);
+            });
+
+            // İlk bölümü açık bırak, diğerlerini kapat
+            const bolumGruplar = document.querySelectorAll('.bolum-grup');
+            bolumGruplar.forEach((grup, index) => {
+                if (index !== 0) {
+                    const baslik = grup.querySelector('.bolum-baslik');
+                    const dersler = grup.querySelector('.bolum-dersler');
+                    baslik.classList.add('collapsed');
+                    dersler.classList.add('collapsed');
+                }
+            });
+        });
+
+        function toggleDersler(element) {
+            const derslerDiv = element.nextElementSibling;
+            const icon = element.querySelector('.toggle-icon');
+            const isCollapsed = element.classList.contains('collapsed');
+            
+            // Toggle sınıfları
+            element.classList.toggle('collapsed');
+            derslerDiv.classList.toggle('collapsed');
+
+            // Dersler açılırken animasyon ekle
+            if (!isCollapsed) {
+                // Kapanırken
+                derslerDiv.style.overflow = 'hidden';
+            } else {
+                // Açılırken
+                setTimeout(() => {
+                    derslerDiv.style.overflow = 'visible';
+                    // Her derse sırayla animasyon ekle
+                    const dersler = derslerDiv.querySelectorAll('.external-event');
+                    dersler.forEach((ders, index) => {
+                        ders.style.animationDelay = `${index * 0.1}s`;
+                    });
+                }, 50);
+            }
+        }
     </script>
 
     <!-- Takvim yönetimi için özel JavaScript -->

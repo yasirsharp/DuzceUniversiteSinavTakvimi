@@ -14,7 +14,10 @@ namespace Business.Abstract
         IDataResult<List<AkademikPersonel>> GetList(Expression<Func<AkademikPersonel, bool>> filter = null);
         IDataResult<AkademikPersonel> GetById(int akademikPeronelId);
         IResult Add(AkademikPersonel akademikPersonel);
+        Task<IResult> AddPersonelWithUser(AkademikPersonel akademikPersonel);
         IResult Delete(AkademikPersonel akademikPersonel);
         IResult Update(AkademikPersonel akademikPersonel);
+        IResult DeleteWithTransaction(AkademikPersonel akademikPersonel);
+        IResult UpdateWithTransaction(AkademikPersonel akademikPersonel);
     }
 }

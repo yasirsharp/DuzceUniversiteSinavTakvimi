@@ -1,3 +1,40 @@
 ﻿@{
     ViewData["Title"] = "Anasayfa";
 }<h1>Anasayfa</h1>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cookie'den UserInfo'yu al
+        function getCookie(name) {
+            const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
+                const [key, value] = cookie.split('=');
+                acc[key] = value ? decodeURIComponent(value) : '';
+                return acc;
+            }, {});
+
+            return cookies[name] || null;
+        }
+
+        function parseUserInfo() {
+            const userInfoCookie = getCookie('UserInfo');
+            if (!userInfoCookie) {
+                console.log('UserInfo cookie bulunamadı');
+                return null;
+            }
+
+            try {
+                const userInfo = JSON.parse(userInfoCookie);
+                console.log('UserInfo:', userInfo);
+                return userInfo;
+            } catch (error) {
+                console.error('UserInfo parse hatası:', error, 'Raw Data:', userInfoCookie);
+                return null;
+            }
+        }
+
+        // Kullanıcı bilgilerini al ve işle
+        const userInfo = parseUserInfo();
+
+    });
+</script>

@@ -1,8 +1,10 @@
 ﻿using Core.DataAccess.EntityFramework;
+using Core.Entities;
 using DataAccess.Abstract;
-using DataAccess.Concrete.Contexts;
 using Entity.Concrete;
 using Entity.DTOs;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace DataAccess.Concrete.EntityFramework
 {
@@ -32,7 +34,7 @@ namespace DataAccess.Concrete.EntityFramework
             }
         }
 
-        public List<DersBolumAkademikPersonelDTO> GetDetails()
+        public List<DersBolumAkademikPersonelDTO> GetDetails(Expression<Func<DersBolumAkademikPersonelDTO, bool>> filter = null)
         {
             using (DuzceUniversiteContext context = new DuzceUniversiteContext())
             {
@@ -51,7 +53,9 @@ namespace DataAccess.Concrete.EntityFramework
                                  AkademikPersonelAd = ap.Ad,
                                  Unvan = ap.Unvan
                              };
-                return result.ToList();
+                return filter == null
+                        ? result.ToList()
+                        : result.Where(filter).ToList();
             }
         }
     }

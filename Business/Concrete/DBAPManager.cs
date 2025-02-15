@@ -76,5 +76,36 @@ namespace Business.Concrete
                 return new ErrorDataResult<DersBolumAkademikPersonelDTO>(err.Message);
             }
         }
+
+        public IDataResult<List<DersBolumAkademikPersonel>> GetByBolumId(int bolumId)
+        {
+            try
+            {
+                var result = _dbapDal.GetAll(q=>q.BolumId == bolumId);
+
+                if (result != null) return new SuccessDataResult<List<DersBolumAkademikPersonel>>(result, "Veri bulunamadı sınav eklemeyi deneyin");
+
+                return new SuccessDataResult<List<DersBolumAkademikPersonel>>(result);
+            }
+            catch (Exception err)
+            {
+                return new ErrorDataResult<List<DersBolumAkademikPersonel>>(Messages.SomethingWrong + " " + err.Message);
+            }
+        }
+
+        public IDataResult<List<DersBolumAkademikPersonelDTO>> GetDetailsByBolumId(int bolumId)
+        {
+            try
+            {
+                var result = _dbapDal.GetDetails(q=>q.BolumId == bolumId);
+                return result == null
+                    ? new SuccessDataResult<List<DersBolumAkademikPersonelDTO>>(result, "Veri bulunamadı sınav eklemeyi deneyin")
+                    : new SuccessDataResult<List<DersBolumAkademikPersonelDTO>>(result);
+            }
+            catch (Exception err)
+            {
+                return new ErrorDataResult<List<DersBolumAkademikPersonelDTO>>(Messages.SomethingWrong + " " + err.Message);
+            }
+        }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Core.DataAccess.EntityFramework;
 using DataAccess.Abstract;
-using DataAccess.Concrete.Contexts;
 using Entity.Concrete;
 using System;
 using System.Collections.Generic;
@@ -33,6 +32,7 @@ namespace DataAccess.Concrete.EntityFramework
         {
             using (DuzceUniversiteContext context = new DuzceUniversiteContext())
             {
+              
                 var result = from d in context.SinavDerslik
                              join s in context.SinavDetay on d.SinavDetayId equals s.Id
                              where d.GozetmenId == GozetmenId
@@ -42,6 +42,24 @@ namespace DataAccess.Concrete.EntityFramework
                                  DBAPId = s.DBAPId,
                                  SinavSaati = s.SinavSaati,
                                  SinavTarihi = s.SinavTarihi
+                             };
+                return result.ToList();
+            }
+        }
+
+        public List<SinavDerslik> GetBySinavDetayId(int sinavDetayId)
+        {
+            using (DuzceUniversiteContext context = new DuzceUniversiteContext())
+            {
+                var result = from d in context.SinavDerslik
+                             join s in context.SinavDetay on d.SinavDetayId equals s.Id
+                             where d.SinavDetayId == sinavDetayId
+                             select new SinavDerslik
+                             {
+                                 Id = s.Id,
+                                 DerslikId = d.DerslikId,
+                                 GozetmenId = d.GozetmenId,
+                                 SinavDetayId = d.SinavDetayId
                              };
                 return result.ToList();
             }

@@ -1,46 +1,78 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
-    // Sayfanın türüne göre entityName'i belirliyoruz
-    const entityName = 'Ders'; // Bu sayfa için 'Ders' nesnesi
+    const entityName = 'Ders';
+    let isProcessing = false;
 
-    initializeDeleteButtons(entityName);
-    initializeAddButton(entityName);
-    initializeEditButtons(entityName);
+    const initialized = {
+        delete: false,
+        add: false,
+        edit: false
+    };
+
+    if (!initialized.delete) {
+        initializeDeleteButtons(entityName);
+        initialized.delete = true;
+    }
+
+    if (!initialized.add) {
+        initializeAddButton(entityName);
+        initialized.add = true;
+    }
+
+    if (!initialized.edit) {
+        initializeEditButtons(entityName);
+        initialized.edit = true;
+    }
 });
 
-// Silme işlemi
 function initializeDeleteButtons(entityName) {
     document.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const name = this.getAttribute('data-name');
+        button.replaceWith(button.cloneNode(true));
+        
+        document.querySelector(`button[data-id="${button.dataset.id}"]`).addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-            Swal.fire({
-                title: 'Emin misiniz?',
-                text: `"${name}" dersini silmek istediğinize emin misiniz?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Evet, Sil!',
-                cancelButtonText: 'İptal'
-            }).then((result) => {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            try {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: `"${name}" dersini silmek istediğinize emin misiniz?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Evet, Sil!',
+                    cancelButtonText: 'İptal'
+                });
+
                 if (result.isConfirmed) {
-                    deleteEntity(id, entityName);
+                    await deleteEntity(id, entityName);
                 }
-            });
-        });
+            } finally {
+                isProcessing = false;
+            }
+        }, { once: true });
     });
 }
 
-// API işlemleri
-function deleteEntity(id, entityName) {
-    fetch(`/${entityName}/Delete/${id}`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(result => {
+async function deleteEntity(id, entityName) {
+    if (isProcessing) return;
+    isProcessing = true;
+
+    try {
+        const response = await fetch(`/${entityName}/Delete/${id}`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
         if (result.success) {
-            Swal.fire({
+            await Swal.fire({
                 icon: 'success',
                 title: 'Başarılı!',
                 text: result.message,
@@ -51,7 +83,7 @@ function deleteEntity(id, entityName) {
             });
             document.querySelector(`tr[data-id="${id}"]`).remove();
         } else {
-            Swal.fire({
+            await Swal.fire({
                 icon: 'error',
                 title: 'Hata!',
                 text: result.message,
@@ -61,9 +93,8 @@ function deleteEntity(id, entityName) {
                 showConfirmButton: false
             });
         }
-    })
-    .catch(error => {
-        Swal.fire({
+    } catch (error) {
+        await Swal.fire({
             icon: 'error',
             title: 'Hata!',
             text: 'Bir hata oluştu: ' + error,
@@ -72,60 +103,87 @@ function deleteEntity(id, entityName) {
             timer: 3000,
             showConfirmButton: false
         });
-    });
+    } finally {
+        isProcessing = false;
+    }
 }
 
-// Ekleme işlemi
 function initializeAddButton(entityName) {
     const inputRow = document.getElementById("inputRow");
     const tableBody = document.getElementById("tableBody");
+    let addButtonInitialized = false;
     
-    // Ekle butonuna tıklandığında
-    document.getElementById("addRowBtn").addEventListener("click", function () {
-        // Input satırını göster ve en üste taşı
-        inputRow.style.display = "table-row-group";
-        // Input row'u tablonun en üstüne taşı
-        tableBody.parentNode.insertBefore(inputRow, tableBody);
-        // Input alanını temizle
-        document.getElementById('newAd').value = '';
-    });
+    if (!addButtonInitialized) {
+        document.getElementById("addRowBtn")?.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (isProcessing) return;
+            isProcessing = true;
 
-    // İptal butonuna tıklandığında
-    document.getElementById("cancelNewRowBtn").addEventListener("click", function() {
-        // Input satırını gizle
-        inputRow.style.display = "none";
-        // Input alanını temizle
-        document.getElementById('newAd').value = '';
-        
-        // İptal edildiğini bildir
-        Swal.fire({
-            icon: 'info',
-            title: 'İptal Edildi',
-            text: 'Ekleme işlemi iptal edildi.',
-            toast: true,
-            position: 'top-end',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    });
+            try {
+                inputRow.style.display = "table-row-group";
+                tableBody.parentNode.insertBefore(inputRow, tableBody);
+                document.getElementById('newAd').value = '';
+            } finally {
+                isProcessing = false;
+            }
+        }, { once: true });
 
-    // Kaydet butonuna tıklandığında
-    document.getElementById("submitBtn").addEventListener("click", function() {
-        const newAd = document.getElementById('newAd').value;
-        if (!newAd) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Uyarı!',
-                text: 'Lütfen ders adını giriniz.',
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
-            });
-            return;
-        }
-        addEntity(newAd, entityName);
-    });
+        document.getElementById("cancelNewRowBtn")?.addEventListener("click", async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (isProcessing) return;
+            isProcessing = true;
+
+            try {
+                inputRow.style.display = "none";
+                document.getElementById('newAd').value = '';
+                
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'İptal Edildi',
+                    text: 'Ekleme işlemi iptal edildi.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } finally {
+                isProcessing = false;
+            }
+        }, { once: true });
+
+        document.getElementById("submitBtn")?.addEventListener("click", async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (isProcessing) return;
+            isProcessing = true;
+
+            try {
+                const newAd = document.getElementById('newAd').value;
+                if (!newAd) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Uyarı!',
+                        text: 'Lütfen ders adını giriniz.',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                    return;
+                }
+                await addEntity(newAd, entityName);
+            } finally {
+                isProcessing = false;
+            }
+        }, { once: true });
+
+        addButtonInitialized = true;
+    }
 }
 
 // Düzenleme işlemi

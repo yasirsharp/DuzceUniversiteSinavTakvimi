@@ -26,10 +26,10 @@ namespace Frontend1.Controllers
         }
         [HttpPost]
         [Route("/AkademikPersonel/Add")]
-        public IActionResult Add([FromBody] AkademikPersonel akademikPersonel)
+        public async Task<IActionResult> Add([FromBody] AkademikPersonel akademikPersonel)
         {
             var result = _akademikPersonelService.Add(akademikPersonel);
-            if (result.Success) return Ok();
+            if (result.Success) return Ok(result);
 
             return BadRequest(new { message = result.Message });
         }
@@ -37,28 +37,24 @@ namespace Frontend1.Controllers
 
 
         [HttpPost]
+        [Route("/AkademikPersonel/Delete")]
         public IActionResult Delete([FromBody] AkademikPersonel akademikPersonel)
         {
             var result = _akademikPersonelService.Delete(akademikPersonel);
-            if (result.Success) return Ok();
+            if (result.Success) 
+                return Ok(new { success = true, message = result.Message });
 
-            return BadRequest(new { message = result.Message });
+            return BadRequest(new { success = false, message = result.Message });
         }
         [HttpPost]
         public IActionResult Update([FromBody] AkademikPersonel akademikPersonel)
         {
-            var _akademikPersonel = _akademikPersonelService.GetById(akademikPersonel.Id);
-            if (_akademikPersonel.Data == null)
-            {
-                return BadRequest(new { message = _akademikPersonel.Message });
-            }
-
             var result = _akademikPersonelService.Update(akademikPersonel);
             if (!result.Success)
             {
                 return BadRequest(new { message = result.Message });
             }
-            return Ok(); // Başarılı yanıt
+            return Ok();
         }
     }
 }

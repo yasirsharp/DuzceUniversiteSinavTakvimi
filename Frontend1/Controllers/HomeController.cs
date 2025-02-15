@@ -16,9 +16,6 @@ namespace Frontend1.Controllers
             _logger = logger;
         }
         [HttpGet]
-        [Route("Home/index")]
-        [Route("/")]
-        [Route("index")]
         public IActionResult Index()
         {
             return View();

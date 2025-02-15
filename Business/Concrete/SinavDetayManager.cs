@@ -45,6 +45,11 @@ namespace Business.Concrete
             return new SuccessDataResult<List<SinavDetayDTO>>(_sinavDetayDal.GetDetails());
         }
 
+        public IDataResult<List<SinavDetayDTO>> GetByBolumId(int bolumId)
+        {
+            return new SuccessDataResult<List<SinavDetayDTO>>(_sinavDetayDal.GetByBolumId(bolumId));
+        }
+
         public IDataResult<SinavDetayDTO> GetById(int sinavDetayId)
         {
             return new SuccessDataResult<SinavDetayDTO>(_sinavDetayDal.GetDetail(sinavDetayId));
@@ -52,8 +57,29 @@ namespace Business.Concrete
 
         public IResult Update(SinavDetay sinavDetay)
         {
-            _sinavDetayDal.Update(sinavDetay);
-            return new SuccessResult(Messages.SinavDetayUpdated);
+            try
+            {
+                // Önce kaydın var olduğundan emin ol
+                var existingRecord = _sinavDetayDal.Get(s => s.Id == sinavDetay.Id);
+                if (existingRecord == null)
+                {
+                    return new ErrorResult("Güncellenecek sınav kaydı bulunamadı.");
+                }
+
+                // Mevcut kaydın değerlerini güncelle
+                existingRecord.DBAPId = sinavDetay.DBAPId;
+                existingRecord.SinavTarihi = sinavDetay.SinavTarihi;
+                existingRecord.SinavSaati = sinavDetay.SinavSaati;
+
+                // Güncellemeyi yap
+                _sinavDetayDal.Update(existingRecord);
+
+                return new SuccessResult(Messages.SinavDetayUpdated);
+            }
+            catch (Exception err)
+            {
+                return new ErrorResult(err.Message);
+            }
         }
     }
 }

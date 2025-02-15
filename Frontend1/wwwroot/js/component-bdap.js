@@ -1,5 +1,6 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
-    // Durum değişkenleri
+    let isProcessing = false;
+    
     const state = {
         selectedIds: {
             BolumId: null,
@@ -149,57 +150,60 @@
         $(`#personelTable tbody tr[data-id="${detailData.akademikPersonelId}"]`).addClass('selected-row');
     }
 
-    
-});
-function handleDelete(item) {
-    event.stopPropagation(); // Tıklamanın satır seçimine etki etmemesi için
-    
-    Swal.fire({
-        title: 'Emin misiniz?',
-        text: "Bu eşleşmeyi silmek istediğinize emin misiniz?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Evet, sil!',
-        cancelButtonText: 'İptal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            deleteRecord(item);
-        } else {
-            console.log(item);
-            console.log("a");
-            showAlert('warning', 'Silme işlemi iptal edildi');
-        }
-    });
-}
-
-function deleteRecord(item) {
-    console.log(item);
-    fetch(`/BolumDersAkademikPersonel/Delete/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(item)
-    })
-    .then(response => response.json())
-    .then(result => {
-        console.log(result);
-        if (result.success) {
-            console.log("b");
-            showAlert('success', 'Kayıt başarıyla silindi').then(() => {
-                location.reload();
+    function handleDelete(item) {
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        event.stopPropagation();
+        
+        try {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: "Bu eşleşmeyi silmek istediğinize emin misiniz?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, sil!',
+                cancelButtonText: 'İptal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await deleteRecord(item);
+                }
             });
-        } else {
-            showAlert('error', result.message);
+        } finally {
+            isProcessing = false;
         }
-    })
-    .catch(error => {
-        console.log(error);
-        showAlert('error', 'Silme işlemi sırasında bir hata oluştu: ' + error);
-    });
-}
+    }
+
+    async function deleteRecord(item) {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        try {
+            const response = await fetch('/BolumDersAkademikPersonel/Delete/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(item)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                await showAlert('success', 'Kayıt başarıyla silindi');
+                location.reload();
+            } else {
+                await showAlert('error', result.message);
+            }
+        } catch (error) {
+            await showAlert('error', 'Silme işlemi sırasında bir hata oluştu: ' + error);
+        } finally {
+            isProcessing = false;
+        }
+    }
+});
 
 function showAlert(type, message) {
     return new Promise((resolve) => {

@@ -1,34 +1,63 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
-    // Sayfanın türüne göre entityName'i belirliyoruz
-    const entityName = 'Bolum'; // Bu sayfa için 'Bolum' nesnesi
+    const entityName = 'Bolum';
+    let isProcessing = false;
 
-    initializeDeleteButtons(entityName);
-    initializeAddButton(entityName);
-    initializeEditButtons(entityName);
+    const initialized = {
+        delete: false,
+        add: false,
+        edit: false
+    };
+
+    if (!initialized.delete) {
+        initializeDeleteButtons(entityName);
+        initialized.delete = true;
+    }
+
+    if (!initialized.add) {
+        initializeAddButton(entityName);
+        initialized.add = true;
+    }
+
+    if (!initialized.edit) {
+        initializeEditButtons(entityName);
+        initialized.edit = true;
+    }
 });
 
 // Satıra dokununca nesne silme
 function initializeDeleteButtons(entityName) {
     document.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const name = this.getAttribute('data-name');
+        button.replaceWith(button.cloneNode(true));
+        
+        document.querySelector(`button[data-id="${button.dataset.id}"]`).addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-            Swal.fire({
-                title: 'Emin misiniz?',
-                text: `"${name}" bölümünü silmek istediğinize emin misiniz?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Evet, Sil!',
-                cancelButtonText: 'İptal'
-            }).then((result) => {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            try {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: `"${name}" bölümünü silmek istediğinize emin misiniz?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Evet, Sil!',
+                    cancelButtonText: 'İptal'
+                });
+
                 if (result.isConfirmed) {
-                    deleteEntity(id, entityName);
+                    await deleteEntity(id, entityName);
                 }
-            });
-        });
+            } finally {
+                isProcessing = false;
+            }
+        }, { once: true });
     });
 }
 

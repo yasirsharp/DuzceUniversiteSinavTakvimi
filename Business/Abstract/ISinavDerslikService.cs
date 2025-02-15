@@ -13,6 +13,7 @@ namespace Business.Abstract
         IDataResult<List<SinavDerslik>> GetAll();
         IDataResult<List<SinavDetay>> GetByDerslikId(int derslikId);
         IDataResult<List<SinavDetay>> GetByGozetmenId(int gozetmenId);
+        IDataResult<List<SinavDerslik>> GetBySinavDetayId(int sinavDetayId);
         IDataResult<SinavDerslik> Get(int id);
 
         IResult Add(SinavDerslik sinavDerslik);

@@ -1,0 +1,134 @@
+/* Wrapper */
+#wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+/* Sidebar */
+.sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background-color: #343a40;
+    transition: all 0.35s;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+}
+
+.sidebar.collapsed {
+    margin-left: -250px;
+}
+
+.sidebar .navbar-brand {
+    color: #fff;
+    padding: 20px 25px;
+    margin-bottom: 0;
+    background-color: #2b3035;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 1.3rem;
+    width: 100%;
+    display: block;
+    text-decoration: none;
+}
+
+.sidebar .nav-link {
+    color: rgba(255,255,255,0.8);
+    padding: 12px 25px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    border-left: 3px solid transparent;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: #fff;
+    border-left-color: #0d6efd;
+}
+
+.sidebar .nav-link.active {
+    background-color: rgba(255,255,255,0.1);
+    color: #fff;
+    border-left-color: #0d6efd;
+}
+
+.sidebar .nav-link i {
+    width: 25px;
+    font-size: 1.1rem;
+    margin-right: 10px;
+}
+
+/* Submenu */
+.sidebar .nav-item .submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar .nav-item .submenu.show {
+    max-height: 500px;
+}
+
+.sidebar .nav-item .submenu .nav-link {
+    padding-left: 50px;
+    font-size: 0.9rem;
+}
+
+.sidebar .nav-link .arrow {
+    margin-left: auto;
+    transition: transform 0.3s;
+}
+
+.sidebar .nav-link.collapsed .arrow {
+    transform: rotate(-90deg);
+}
+
+/* Content */
+.content {
+    width: calc(100% - 250px);
+    min-height: 100vh;
+    transition: all 0.35s;
+    margin-left: 250px;
+    background-color: #f4f6f9;
+    padding: 20px;
+}
+
+.content.expanded {
+    width: 100%;
+    margin-left: 0;
+}
+
+/* Menu Toggle Button */
+.menu-toggle {
+    background: none;
+    border: none;
+    color: #343a40;
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.menu-toggle:hover {
+    color: #0d6efd;
+}
+
+/* Overlay */
+.overlay {
+    display: none;
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 998;
+    opacity: 0;
+    transition: all 0.5s ease-in-out;
+}
+
+.overlay.show {
+    display: block;
+    opacity: 1;
+} 

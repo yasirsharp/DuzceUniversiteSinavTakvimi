@@ -1,6 +1,8 @@
-﻿namespace Entity.DTOs
+﻿using Core.Entities;
+
+namespace Entity.DTOs
 {
-    public class SinavKayitDTO
+    public class SinavKayitDTO:IDto
     {
         public int DbapId { get; set; }
         public DateTime SinavTarihi { get; set; }

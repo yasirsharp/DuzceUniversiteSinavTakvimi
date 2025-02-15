@@ -7,6 +7,7 @@ namespace Business.Abstract
     public interface ISinavDetayService
     {
         IDataResult<List<SinavDetay>> GetAll();
+        IDataResult<List<SinavDetayDTO>> GetByBolumId(int bolumId);
         IDataResult<List<SinavDetayDTO>> GetAllDetails();
         IDataResult<SinavDetayDTO> GetById(int sinavDetayId);
         IResult Add(SinavDetay sinavDetay);

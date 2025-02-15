@@ -1,4 +1,4 @@
-﻿using Entity.Abstract;
+﻿using Core.Entities;
 
 namespace Entity.Concrete
 {
@@ -7,5 +7,6 @@ namespace Entity.Concrete
         public int Id { get; set; }
         public string Ad { get; set; }
         public string Unvan { get; set; }
+        public int? UserId { get; set; }
     }
 }

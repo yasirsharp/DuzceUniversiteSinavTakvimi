@@ -9,24 +9,83 @@
     var bolumDersAkademikPersonelEslestirmeleri = ViewData["BDAP"] as IDataResult<List<DersBolumAkademikPersonelDTO>>;
 }
 
-<!-- BDAP özel CSS dosyasını ekle -->
-<link rel="stylesheet" href="~/css/bdap.css" />
-
 <style>
     .selected-row {
         background-color: #007bff; /* Mavi */
         color: white; /* Yazı rengini beyaz yapar */
+    }
+
+    .table-container {
+        height: 200px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+    }
+
+    .table-container table {
+        margin-bottom: 0;
+    }
+
+    .table-container thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 1;
+    }
+
+    .right-table {
+        height: calc(100vh - 120px);
+        margin-bottom: 20px;
+    }
+
+    .right-table .table-responsive {
+        height: calc(100vh - 170px);
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+
+    .right-table table {
+        margin-bottom: 0;
+        width: 100%;
+    }
+
+    .right-table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 1;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    /* Yatay scroll için */
+    .right-table .table-responsive {
+        overflow-x: auto;
+    }
+
+    .right-table tbody {
+        background-color: white;
+    }
+
+    /* Tüm tablolar için ortak özellikler */
+    .table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 500;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(0,123,255,0.05);
     }
 </style>
 
 <div class="container-fluid mt-4">
     <div class="row">
         <!-- Sol kısım -->
-        <div class="col-4 border-end d-flex flex-column" style="height: calc(100vh - 60px);">
+        <div class="col-4 border-end">
             <!-- Bölüm Tablosu -->
-            <div class="table-container mb-2">
+            <div class="mb-4">
                 <h5>Bölüm Tablosu</h5>
-                <div class="table-wrapper">
+                <div class="table-container">
                     <table class="table table-bordered" id="bolumTable">
                         <thead class="table-light">
                             <tr>
@@ -37,7 +96,7 @@
                         <tbody>
                             @foreach (var bolum in bolumler.Data)
                             {
-                                <tr data-type="bolum" data-id="@bolum.Id">
+                                <tr data-type="bolum">
                                     <td>@bolum.Id</td>
                                     <td>@bolum.Ad</td>
                                 </tr>
@@ -47,9 +106,9 @@
                 </div>
             </div>
             <!-- Ders Tablosu -->
-            <div class="table-container mb-2">
+            <div class="mb-4">
                 <h5>Ders Tablosu</h5>
-                <div class="table-wrapper">
+                <div class="table-container">
                     <table class="table table-bordered" id="dersTable">
                         <thead class="table-light">
                             <tr>
@@ -60,7 +119,7 @@
                         <tbody>
                             @foreach (var ders in dersler.Data)
                             {
-                                <tr data-type="ders" data-id="@ders.Id">
+                                <tr data-type="ders">
                                     <td>@ders.Id</td>
                                     <td>@ders.Ad</td>
                                 </tr>
@@ -70,9 +129,9 @@
                 </div>
             </div>
             <!-- Akademik Personel Tablosu -->
-            <div class="table-container">
+            <div>
                 <h5>Akademik Personel Tablosu</h5>
-                <div class="table-wrapper">
+                <div class="table-container">
                     <table class="table table-bordered" id="personelTable">
                         <thead class="table-light">
                             <tr>
@@ -84,7 +143,7 @@
                         <tbody>
                             @foreach (var aPersonel in akademikPersoneller.Data)
                             {
-                                <tr data-type="akademikPersonel" data-id="@aPersonel.Id">
+                                <tr data-type="akademikPersonel">
                                     <td>@aPersonel.Id</td>
                                     <td>@aPersonel.Ad</td>
                                     <td>@aPersonel.Unvan</td>
@@ -96,46 +155,44 @@
             </div>
         </div>
         <!-- Sağ kısım -->
-        <div class="col-8 d-flex flex-column">
-            <div class="flex-grow-1 overflow-auto">
-                <table id="bdapTable" class="table table-bordered table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Bölüm</th>
-                            <th>Ders</th>
-                            <th>Akademik Personel</th>
-                            <th>İşlemler</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr id="singleRow" style="display: none;">
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td>
-                                <button id="saveButton" class="btn btn-primary btn-sm" disabled>Kaydet</button>
-                            </td>
-                        </tr>
-                        @foreach (var item in bolumDersAkademikPersonelEslestirmeleri.Data)
-                        {
-                            <tr data-id="@item.Id">
-                                <td>@item.BolumAd</td>
-                                <td>@item.DersAd</td>
-                                <td>@item.AkademikPersonelAd (@item.Unvan)</td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-danger delete-btn" onclick='handleDelete(@Html.Raw(Json.Serialize(item)))'>
-                                        <i class="fas fa-trash"></i>
-                                        Sil
-                                    </button>
+        <div class="col-8">
+            <div class="right-table">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Bölüm</th>
+                                <th>Ders</th>
+                                <th>Akademik Personel</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="singleRow" style="display: none;">
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <button id="saveButton" class="btn btn-primary btn-sm" disabled>Kaydet</button>
                                 </td>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                            @foreach (var item in bolumDersAkademikPersonelEslestirmeleri.Data)
+                            {
+                                <tr>
+                                    <td>@item.BolumAd</td>
+                                    <td>@item.DersAd</td>
+                                    <td>@item.AkademikPersonelAd</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm">Sil</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="~/js/component-bdap.js"></script>
