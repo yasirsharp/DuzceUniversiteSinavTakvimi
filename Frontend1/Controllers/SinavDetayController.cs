@@ -31,16 +31,13 @@ namespace Frontend1.Controllers
             _akademikPersonelService = akademikPersonelService;
         }
 
-        [Route("/sinavdetay/{bolumId}")]
         // Tüm sınav detaylarını listeleyen action
-        public IActionResult Index(int bolumId)
+        public IActionResult Index()
         {
-            if (bolumId <= 0) return BadRequest("Git düzgün veri gir KÖPEK.");
             ViewData["DBAP"] = _dBAPService.GetAll();
             ViewData["DBAPDetail"] = _dBAPService.GetAllDetails();
             ViewData["Derslikler"] = _derslikService.GetList();
             ViewData["AkademikPersoneller"] = _akademikPersonelService.GetList();
-            ViewData["BolumID"] = bolumId;
             
             var sinavDetayResult = _sinavDetayService.GetAllDetails();
             
@@ -53,51 +50,37 @@ namespace Frontend1.Controllers
             return View("Error", sinavDetayResult.Message);
         }
 
+        [Route("/sinavdetay/{bolumId}")]
+        public IActionResult Index(int bolumId)
+        {
+            if (bolumId <= 0) return Json("Düzgün Veri girerseniz çok sevinirim. isterseniz düzgün veri nasıl girdirilir gösterebilirim. Hem de uygulamalı.");
+
+            ViewData["DersBolumAkademikPersonel"] = _dBAPService.GetByBolumId(bolumId);
+            ViewData["DersBolumAkademikPersonelDetails"] = _dBAPService.GetDetailsByBolumId(bolumId);
+            ViewData["Derslikler"] = _derslikService.GetList();
+            ViewData["AkademikPersoneller"] = _akademikPersonelService.GetList();
+
+            var sinavDetayResult = _sinavDetayService.GetByBolumId(bolumId);
+            ViewData["SinavDetay"] = sinavDetayResult;
+
+            return View();
+        }
+
         // Yeni sınav detayı ekleme işlemi - POST
         [HttpPost]
+        [Route("/SinavDetay/Add")]
         public IActionResult Add([FromBody] SinavKayitDTO model)
         {
             try
             {
-                // 1. Önce SinavDetay kaydını yap
-                var sinavDetay = new SinavDetay
-                {
-                    DBAPId = model.DbapId,
-                    SinavTarihi = model.SinavTarihi,
-                    SinavSaati = model.SinavSaati
-                };
+                var result = _sinavDetayService.Add(model);
 
-                var sinavDetayResult = _sinavDetayService.Add(sinavDetay);
-                if (!sinavDetayResult.Success)
-                {
-                    return Json(new { success = false, message = sinavDetayResult.Message });
-                }
-                List<DerslikGozetmenDTO> eklenenDerslikler = new List<DerslikGozetmenDTO>();
-                // 2. Sonra SinavDerslik kayıtlarını yap
-                foreach (var derslik in model.Derslikler)
-                {
-                    var sinavDerslik = new SinavDerslik
-                    {
-                        SinavDetayId = sinavDetay.Id,
-                        DerslikId = derslik.DerslikId,
-                        GozetmenId = derslik.GozetmenId ?? 0
-                    };
+                if (!result.Success)
+                    return Json(new { success = false, message = result.Message });
+                
 
-                    var sinavDerslikResult = _sinavDerslikService.Add(sinavDerslik);
-                    if (!sinavDerslikResult.Success)
-                    {
-                        // Hata durumunda önceki kayıtları silmek için
-                        _sinavDetayService.Delete(sinavDetay);
-                        if (eklenenDerslikler.Count>0)
-                        {
-                            _sinavDerslikService.Delete(sinavDerslik);
-                        }
-                        return Json(new { success = false, message = "Derslik ataması yapılırken bir hata oluştu: " + sinavDerslikResult.Message });
-                    }
-                    eklenenDerslikler.Add(derslik);
-                }
 
-                return Json(new { success = true, message = "Sınav programı başarıyla kaydedildi." });
+                return Json(new { success = true, message = result.Message });
             }
             catch (Exception ex)
             {
@@ -111,18 +94,31 @@ namespace Frontend1.Controllers
         {
             try
             {
-                Console.WriteLine($"Gelen model: {System.Text.Json.JsonSerializer.Serialize(model)}");
+                // Gelen modelin geçerliliğini kontrol et
+                if (model == null || model.Id <= 0)
+                {
+                    return Json(new { success = false, message = "Geçersiz sınav verisi." });
+                }
 
-                // 1. SinavDetay'ı güncelle
+                // Önce mevcut sınav-derslik eşleştirmelerini sil
+                var mevcutDerslikler = _sinavDerslikService.GetBySinavDetayId(model.Id);
+                if (mevcutDerslikler.Success)
+                {
+                    foreach (var derslik in mevcutDerslikler.Data)
+                    {
+                        _sinavDerslikService.Delete(derslik);
+                    }
+                }
+
+                // Sınav detayını güncelle
                 var sinavDetay = new SinavDetay
                 {
                     Id = model.Id,
-                    DBAPId = model.DbapId,
-                    SinavTarihi = model.SinavTarihi.Date,
-                    SinavSaati = TimeOnly.Parse(model.SinavSaati)
+                    DerBolumAkademikPersonelId = model.DbapId,
+                    SinavTarihi = model.SinavTarihi,
+                    SinavBaslangicSaati = model.SinavBaslangicSaati,
+                    SinavBitisSaati = model.SinavBitisSaati
                 };
-
-                Console.WriteLine($"Güncellenecek sınav: {System.Text.Json.JsonSerializer.Serialize(sinavDetay)}");
 
                 var updateResult = _sinavDetayService.Update(sinavDetay);
                 if (!updateResult.Success)
@@ -130,33 +126,20 @@ namespace Frontend1.Controllers
                     return Json(new { success = false, message = updateResult.Message });
                 }
 
-                // 2. Önce eski derslik eşleştirmelerini sil
-                var eskiDerslikler = _sinavDerslikService.GetBySinavDetayId(model.Id);
-                if (eskiDerslikler.Success && eskiDerslikler.Data != null)
+                // Yeni derslik-gözetmen eşleştirmelerini ekle
+                foreach (var derslik in model.Derslikler)
                 {
-                    foreach (var eskiDerslik in eskiDerslikler.Data)
+                    var sinavDerslik = new SinavDerslik
                     {
-                        _sinavDerslikService.Delete(eskiDerslik);
-                    }
-                }
+                        SinavDetayId = model.Id,
+                        DerslikId = derslik.DerslikId,
+                        GozetmenId = derslik.GozetmenId ?? 0
+                    };
 
-                // 3. Yeni derslik eşleştirmelerini ekle
-                if (model.Derslikler != null)
-                {
-                    foreach (var derslik in model.Derslikler)
+                    var derslikResult = _sinavDerslikService.Add(sinavDerslik);
+                    if (!derslikResult.Success)
                     {
-                        var sinavDerslik = new SinavDerslik
-                        {
-                            SinavDetayId = model.Id,
-                            DerslikId = derslik.DerslikId,
-                            GozetmenId = derslik.GozetmenId ?? 0
-                        };
-
-                        var addResult = _sinavDerslikService.Add(sinavDerslik);
-                        if (!addResult.Success)
-                        {
-                            return Json(new { success = false, message = $"Derslik {derslik.DerslikId} eklenirken hata: {addResult.Message}" });
-                        }
+                        return Json(new { success = false, message = derslikResult.Message });
                     }
                 }
 
@@ -175,7 +158,7 @@ namespace Frontend1.Controllers
         {
             try
             {
-                // 1. Önce SinavDerslik eşleştirmelerini sil
+                /*// 1. Önce SinavDerslik eşleştirmelerini sil
                 var sinavDerslikler = _sinavDerslikService.GetBySinavDetayId(id);
                 foreach (var sinavDerslik in sinavDerslikler.Data)
                 {
@@ -189,9 +172,9 @@ namespace Frontend1.Controllers
                 if (!result.Success)
                 {
                     return Json(new { success = false, message = result.Message });
-                }
+                }*/
 
-                return Json(new { success = true, message = "Sınav başarıyla silindi." });
+                return Json(new { success = false, message = "Yapım Aşamasında (~yasirsharp)." });
             }
             catch (Exception ex)
             {

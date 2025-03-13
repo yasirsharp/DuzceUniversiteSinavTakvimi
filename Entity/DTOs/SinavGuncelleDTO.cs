@@ -9,7 +9,8 @@ namespace Entity.DTOs
         public int Id { get; set; }
         public int DbapId { get; set; }
         public DateTime SinavTarihi { get; set; }
-        public string SinavSaati { get; set; }  // HH:mm formatında string olarak
+        public TimeOnly SinavBaslangicSaati { get; set; }
+        public TimeOnly SinavBitisSaati { get; set; }
         public List<DerslikGozetmenDTO> Derslikler { get; set; }
     }
 } 

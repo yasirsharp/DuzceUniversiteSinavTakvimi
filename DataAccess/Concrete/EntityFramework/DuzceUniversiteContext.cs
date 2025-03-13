@@ -22,9 +22,8 @@ namespace DataAccess.Concrete.EntityFramework
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Server=94.73.170.5;Database=u5627450_takvim;User Id=u5627450_takvim;Password=Yasir#Demirci0308;Trust Server Certificate=True;");
-            //optionsBuilder.UseSqlServer(@"Server=94.73.170.5;Integrated Security=True;Database=u5627450_takvim;User Id=u5627450_takvim;Password=Yasir#Demirci0308;Trust Server Certificate=True;");
-            //optionsBuilder.UseSqlServer(@"Server=YASIR\SQLEXPRESS;Integrated Security=True; Database=DuzceUniversite; Trust Server Certificate=True; Trusted_Connection=true");
+            //optionsBuilder.UseSqlServer(@"Server=94.73.170.5;Database=u5627450_takvim;User Id=u5627450_takvim;Password=Yasir#Demirci0308;Trust Server Certificate=True;");
+            optionsBuilder.UseSqlServer(@"Server=YASIR\SQLEXPRESS;Integrated Security=True; Database=DuzceUniversite; Trust Server Certificate=True; Trusted_Connection=true");
             //Data Source=;Connect Timeout=30;Encrypt=True;Application Intent=ReadWrite;Multi Subnet Failover=False
             //optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=DuzceUniversite;Trusted_Connection=true");
         }

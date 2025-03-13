@@ -21,10 +21,29 @@ namespace Business.Concrete
             _sinavDetayDal = sinavDetayDal;
         }
 
-        public IResult Add(SinavDetay sinavDetay)
+        public IResult Add(SinavKayitDTO sinavKayitDTO)
         {
-            _sinavDetayDal.Add(sinavDetay);
-            return new SuccessResult(Messages.SinavDetayAdded);
+            try
+            {
+                // Derslik ve gözetmenleri listeye çevir
+                List<int> derslikIdleri = sinavKayitDTO.Derslikler.Select(d => d.DerslikId).ToList();
+                List<int> gozetmenIdleri = sinavKayitDTO.Derslikler.Where(d => d.GozetmenId.HasValue).Select(d => d.GozetmenId.Value).ToList();
+
+                // Çakışma kontrolü
+                var result = _sinavDetayDal.ExistSinav(derslikIdleri, gozetmenIdleri, sinavKayitDTO.DerBolumAkademikPersonelId,
+                                                                      sinavKayitDTO.SinavBaslangicSaati, sinavKayitDTO.SinavBitisSaati, sinavKayitDTO.SinavTarihi);
+
+                if (result!=null)
+                    return new ErrorResult("Derslik, gözetmen veya akademik personel için çakışan bir sınav bulunmaktadır. Lütfen kontrol ediniz.");
+
+                // Eğer çakışma yoksa, sınavı ekle
+                _sinavDetayDal.AddWithTransaction(sinavKayitDTO);
+                return new SuccessResult(Messages.SinavDetayAdded);
+            }
+            catch (Exception err)
+            {
+                return new ErrorResult(err.Message);
+            }
 
         }
 
@@ -67,9 +86,11 @@ namespace Business.Concrete
                 }
 
                 // Mevcut kaydın değerlerini güncelle
-                existingRecord.DBAPId = sinavDetay.DBAPId;
+                existingRecord.DerBolumAkademikPersonelId = sinavDetay.DerBolumAkademikPersonelId;
                 existingRecord.SinavTarihi = sinavDetay.SinavTarihi;
-                existingRecord.SinavSaati = sinavDetay.SinavSaati;
+                existingRecord.SinavBaslangicSaati = sinavDetay.SinavBaslangicSaati;
+                existingRecord.SinavBitisSaati= sinavDetay.SinavBitisSaati;
+                
 
                 // Güncellemeyi yap
                 _sinavDetayDal.Update(existingRecord);

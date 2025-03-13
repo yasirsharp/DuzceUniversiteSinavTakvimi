@@ -14,12 +14,84 @@ namespace DataAccess.Concrete.EntityFramework
 {
     public class EfSinavDetayDal : EfEntityRepositoryBase<SinavDetay, DuzceUniversiteContext>, ISinavDetayDal
     {
+        public void AddWithTransaction(SinavKayitDTO sinavKayitDTO)
+        {
+            using (DuzceUniversiteContext context = new DuzceUniversiteContext())
+            {
+                using (var transaction = context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        SinavDetay sinavDetay = new SinavDetay
+                        {
+                            DerBolumAkademikPersonelId = sinavKayitDTO.DerBolumAkademikPersonelId,
+                            SinavTarihi = sinavKayitDTO.SinavTarihi,
+                            SinavBaslangicSaati = sinavKayitDTO.SinavBaslangicSaati,
+                            SinavBitisSaati = sinavKayitDTO.SinavBitisSaati
+                        };
+                        context.SinavDetay.Add(sinavDetay);
+                        context.SaveChanges();
+
+                        foreach (var derslik in sinavKayitDTO.Derslikler)
+                        {
+                            SinavDerslik sinavDerslik = new SinavDerslik
+                            {
+                                SinavDetayId = sinavDetay.Id,
+                                DerslikId = derslik.DerslikId,
+                                GozetmenId = derslik.GozetmenId ?? 0 
+                            };
+                            context.SinavDerslik.Add(sinavDerslik);
+                        }
+
+                        context.SaveChanges();
+                        transaction.Commit();
+                    }
+                    catch (Exception err)
+                    {
+                        transaction.Rollback();
+                        throw new Exception(err.Message);
+                    }
+                }
+            }
+        }
+
+
+        public SinavDetay ExistSinav(List<int> derslikIdleri, List<int> gozetmenIdleri, int akademikPersonelId, TimeOnly SinavBaslangicSaati, TimeOnly SinavBitisSaati, DateTime sinavTarihi)
+        {
+            using (DuzceUniversiteContext context = new DuzceUniversiteContext())
+            {
+                var result = from s in context.SinavDetay
+                             join sd in context.SinavDerslik on s.Id equals sd.SinavDetayId into sd_join
+                             from sd in sd_join.DefaultIfEmpty()
+                             join dba in context.Ders_Bolum_AkademikPersonel on s.DerBolumAkademikPersonelId equals dba.Id into dba_join
+                             from dba in dba_join.DefaultIfEmpty()
+                             where s.SinavTarihi.Date == sinavTarihi.Date &&
+                                   (
+                                       // Derslik çakışma kontrolü
+                                       (derslikIdleri.Contains(sd.DerslikId)) ||
+                                       // Gözetmen çakışma kontrolü
+                                       (gozetmenIdleri.Contains(sd.GozetmenId)) ||
+                                       // Akademik personel çakışma kontrolü
+                                       (akademikPersonelId == dba.AkademikPersonelId)
+                                   ) &&
+                                   (
+                                       (s.SinavBaslangicSaati <= SinavBaslangicSaati && s.SinavBitisSaati > SinavBaslangicSaati) ||
+                                       (s.SinavBaslangicSaati < SinavBitisSaati && s.SinavBitisSaati >= SinavBitisSaati) ||
+                                       (s.SinavBaslangicSaati >= SinavBaslangicSaati && s.SinavBitisSaati <= SinavBitisSaati)
+                                   )
+                             select s;
+
+                return result.FirstOrDefault();
+            }
+        }
+
+
         public List<SinavDetayDTO> GetByBolumId(int bolumId)
         {
             using (DuzceUniversiteContext context = new DuzceUniversiteContext())
             {
                 var result = from s in context.SinavDetay
-                             join dba in context.Ders_Bolum_AkademikPersonel on s.DBAPId equals dba.Id
+                             join dba in context.Ders_Bolum_AkademikPersonel on s.DerBolumAkademikPersonelId equals dba.Id
                              join d in context.Ders on dba.DersId equals d.Id
                              join b in context.Bolum on dba.BolumId equals b.Id
                              join ap in context.AkademikPersonel on dba.AkademikPersonelId equals ap.Id
@@ -28,16 +100,18 @@ namespace DataAccess.Concrete.EntityFramework
                              where b.Id == bolumId
                              select new SinavDetayDTO
                              {
-                                 Id = dba.Id,
+                                 Id = s.Id,
                                  DersAd = d.Ad,
                                  BolumAd = b.Ad,
                                  AkademikPersonelAd = ap.Ad,
                                  Unvan = ap.Unvan,
                                  SinavTarihi = s.SinavTarihi,
-                                 SinavSaati = s.SinavSaati,
+                                 SinavBaslangicSaati = s.SinavBaslangicSaati,
                                  DerslikId = sd.DerslikId,
                                  DerslikKontenjan = dlik.Kapasite,
-                                 GozetmenId = sd.GozetmenId
+                                 GozetmenId = sd.GozetmenId,
+                                 DersBolumAkademikPersonelId = dba.Id,
+                                 SinavBitisSaati = s.SinavBitisSaati
                              };
 
                 return result.ToList();
@@ -49,7 +123,7 @@ namespace DataAccess.Concrete.EntityFramework
             using (DuzceUniversiteContext context = new DuzceUniversiteContext())
             {
                 var result = from s in context.SinavDetay
-                             join dba in context.Ders_Bolum_AkademikPersonel on s.DBAPId equals dba.Id
+                             join dba in context.Ders_Bolum_AkademikPersonel on s.DerBolumAkademikPersonelId equals dba.Id
                              join d in context.Ders on dba.DersId equals d.Id
                              join b in context.Bolum on dba.BolumId equals b.Id
                              join ap in context.AkademikPersonel on dba.AkademikPersonelId equals ap.Id
@@ -65,7 +139,9 @@ namespace DataAccess.Concrete.EntityFramework
                                  AkademikPersonelAd = ap.Ad,
                                  Unvan = ap.Unvan,
                                  SinavTarihi = s.SinavTarihi,
-                                 SinavSaati = s.SinavSaati,
+                                 SinavBaslangicSaati = s.SinavBaslangicSaati,
+                                 SinavBitisSaati = s.SinavBitisSaati,
+                                 DersBolumAkademikPersonelId = dba.Id
                              };
 
                 return result.FirstOrDefault()!;
@@ -77,7 +153,7 @@ namespace DataAccess.Concrete.EntityFramework
             using (DuzceUniversiteContext context = new DuzceUniversiteContext())
             {
                 var result = from s in context.SinavDetay
-                             join dba in context.Ders_Bolum_AkademikPersonel on s.DBAPId equals dba.Id
+                             join dba in context.Ders_Bolum_AkademikPersonel on s.DerBolumAkademikPersonelId equals dba.Id
                              join d in context.Ders on dba.DersId equals d.Id
                              join b in context.Bolum on dba.BolumId equals b.Id
                              join ap in context.AkademikPersonel on dba.AkademikPersonelId equals ap.Id
@@ -91,10 +167,12 @@ namespace DataAccess.Concrete.EntityFramework
                                  AkademikPersonelAd = ap.Ad,
                                  Unvan = ap.Unvan,
                                  SinavTarihi = s.SinavTarihi,
-                                 SinavSaati = s.SinavSaati,
+                                 SinavBaslangicSaati = s.SinavBaslangicSaati,
+                                 SinavBitisSaati = s.SinavBitisSaati,
                                  DerslikId = sd.DerslikId,
                                  DerslikKontenjan = dlik.Kapasite,
-                                 GozetmenId = sd.GozetmenId
+                                 GozetmenId = sd.GozetmenId,
+                                 DersBolumAkademikPersonelId = dba.Id
                              };
 
                 return result.ToList();

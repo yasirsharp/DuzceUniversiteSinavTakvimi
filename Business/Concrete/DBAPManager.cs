@@ -83,7 +83,7 @@ namespace Business.Concrete
             {
                 var result = _dbapDal.GetAll(q=>q.BolumId == bolumId);
 
-                if (result != null) return new SuccessDataResult<List<DersBolumAkademikPersonel>>(result, "Veri bulunamadı sınav eklemeyi deneyin");
+                if (result != null) return new ErrorDataResult<List<DersBolumAkademikPersonel>>(result, "Veri bulunamadı sınav eklemeyi deneyin");
 
                 return new SuccessDataResult<List<DersBolumAkademikPersonel>>(result);
             }

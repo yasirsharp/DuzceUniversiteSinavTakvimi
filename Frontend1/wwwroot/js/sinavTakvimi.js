@@ -81,12 +81,16 @@ class SinavTakvimiManager {
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'exportButton dayGridMonth,timeGridWeek,timeGridDay'
+                right: 'exportPdfButton exportExcelButton dayGridMonth,timeGridWeek,timeGridDay'
             },
             customButtons: {
-                exportButton: {
-                    text: 'Haftalık Sınav Programı',
+                exportExcelButton: {
+                    text: 'Excel',
                     click: () => this.exportToExcel()
+                },
+                exportPdfButton: {
+                    text: 'Pdf',
+                    click: () => this.exportToPDF()
                 }
             },
             initialView: 'timeGridWeek',
@@ -141,6 +145,14 @@ class SinavTakvimiManager {
         calendar.removeAllEvents();
 
         try {
+            // Veri kontrolü
+            if (!this.sinavlarData) {
+                console.warn('Sınav verisi bulunamadı');
+                return;
+            }
+
+            console.log(this.sinavlarData);
+
             // Veriyi işle
             if (Array.isArray(this.sinavlarData)) {
                 this.sinavlarData.forEach(sinav => {
@@ -148,12 +160,15 @@ class SinavTakvimiManager {
                         this.createCalendarEvent(sinav);
                     }
                 });
+            } else {
+                console.warn('Sınav verisi dizi değil:', this.sinavlarData);
             }
 
             // Takvimi güncelle
-            calendar.gotoDate(new Date()); // Bugüne git
+            calendar.gotoDate(new Date());
             calendar.render();
         } catch (error) {
+            console.error('Sınav yükleme hatası:', error);
             this.handleError(error);
         }
     }
@@ -163,44 +178,71 @@ class SinavTakvimiManager {
      * @param {Object} sinav - Sınav verisi
      */
     createCalendarEvent(sinav) {
-        console.log(sinav);
         try {
+            // Null kontrolü
+            if (!sinav) {
+                console.warn('Geçersiz sınav verisi:', sinav);
+                return;
+            }
+
+            // Tarih kontrolü
+            if (!sinav.sinavTarihi) {
+                console.warn('Sınav tarihi bulunamadı:', sinav);
+                return;
+            }
+
             // Tarih ve saat bilgisini birleştir
-            const eventDate = new Date(sinav.sinavTarihi);
-            const [hours, minutes] = sinav.sinavSaati.split(':');
-            eventDate.setHours(parseInt(hours), parseInt(minutes), 0);
+            let eventDate;
+            try {
+                eventDate = new Date(sinav.sinavTarihi);
+                if (isNaN(eventDate.getTime())) {
+                    console.warn('Geçersiz tarih formatı:', sinav.sinavTarihi);
+                    return;
+                }
+            } catch (error) {
+                console.error('Tarih dönüştürme hatası:', error);
+                return;
+            }
+
+            // Saat bilgisi kontrolü
+            if (sinav.sinavBaslangicSaati) {
+                const [hours, minutes] = sinav.sinavBaslangicSaati.split(':');
+                eventDate.setHours(parseInt(hours), parseInt(minutes), 0);
+            }
 
             // Derslik bilgisini bul
             const derslik = this.dersliklerData.find(d => d.id === sinav.derslikId);
 
             // Gözetmen bilgisini bul
             const gozetmenId = sinav.gozetmenId || null;
-
+            console.log(sinav.dersBolumAkademikPersonelId);
+            // Event oluştur
             const event = {
                 id: sinav.id,
-                title: sinav.dersAd,
+                title: sinav.dersAd || 'İsimsiz Sınav',
                 start: eventDate,
-                description: `${sinav.unvan} ${sinav.akademikPersonelAd}`,
+                description: sinav.akademikPersonelAd ? `${sinav.unvan || ''} ${sinav.akademikPersonelAd}` : '',
                 backgroundColor: COLOR_CONFIG.SINAV_COLOR,
                 borderColor: COLOR_CONFIG.SINAV_COLOR,
                 textColor: '#fff',
                 allDay: false,
                 extendedProps: {
-                    dersAd: sinav.dersAd,
-                    akademikPersonelAd: sinav.akademikPersonelAd,
-                    bolumAd: sinav.bolumAd,
-                    unvan: sinav.unvan,
+                    dersAd: sinav.dersAd || '',
+                    akademikPersonelAd: sinav.akademikPersonelAd || '',
+                    bolumAd: sinav.bolumAd || '',
+                    unvan: sinav.unvan || '',
                     derslikId: sinav.derslikId,
                     derslikAd: derslik ? derslik.ad : 'Derslik Atanmamış',
                     derslikKontenjan: sinav.derslikKontenjan,
                     gozetmenId: gozetmenId,
-                    dbapId: sinav.dbapId
+                    derBolumAkademikPersonelId: sinav.dersBolumAkademikPersonelId,
+                    dbapId: sinav.dersBolumAkademikPersonelId
                 }
             };
 
             calendar.addEvent(event);
         } catch (error) {
-            this.handleError(error);
+            console.error('Event oluşturma hatası:', error, 'Sınav:', sinav);
         }
     }
 
@@ -230,7 +272,7 @@ class SinavTakvimiManager {
                     borderColor: getBolumColor(parseInt(eventEl.dataset.bolumId)),
                     textColor: '#fff',
                     extendedProps: {
-                        dbapId: parseInt(eventEl.dataset.id),
+                        derBolumAkademikPersonelId: parseInt(eventEl.dataset.id),
                         dersId: parseInt(eventEl.dataset.dersId),
                         bolumId: parseInt(eventEl.dataset.bolumId)
                     }
@@ -249,29 +291,201 @@ class SinavTakvimiManager {
         try {
             const event = info.event;
             const newDate = event.start;
+            const extendedProps = event.extendedProps;
+            const oldDate = info.oldEvent.start;
 
+            // Mevcut derslik ve gözetmen bilgilerini al
+            //const response = await fetch(`/SinavDetay/GetSinavDerslikler/${event.id}`);
+            //const response = {}
+            //const derslikData = await response.json();
+
+            //if (!derslikData.success) {
+            //    info.revert();
+            //    throw new Error(derslikData.message);
+            //}
+
+            // Bitiş saatini başlangıç saatinden 1 saat sonrası olarak ayarla
+            const baslangicSaat = newDate.getHours();
+            const baslangicDakika = newDate.getMinutes();
+            const bitisSaat = baslangicSaat + 1;
+
+            // Gözetmen seçimi için select listesi HTML'i oluştur
+            const gozetmenSelectHTML = (selectedGozetmenId = null) => `
+                <select class="form-control gozetmen-select">
+                    <option value="">Gözetmen Seçiniz</option>
+                    ${this.akademikPersonellerData.map(ap => 
+                        `<option value="${ap.id}" ${ap.id === selectedGozetmenId ? 'selected' : ''}>${ap.unvan} ${ap.ad}</option>`
+                    ).join('')}
+                </select>
+            `;
+
+            // Eski derslik bilgilerini hazırla
+            /*const eskiDerslikBilgileri = derslikData.data.map(d => {
+                const derslik = this.dersliklerData.find(dr => dr.id === d.derslikId);
+                const gozetmen = this.akademikPersonellerData.find(ap => ap.id === d.gozetmenId);
+                return {
+                    derslik: derslik ? derslik.ad : 'Bilinmiyor',
+                    kapasite: derslik ? derslik.kapasite : '-',
+                    gozetmen: gozetmen ? `${gozetmen.unvan} ${gozetmen.ad}` : 'Atanmamış'
+                };
+            });*/
+
+            // Seçili yeni derslikleri al
+            const yeniDerslikIds = $('#mainDerslikFilter').val();
+            const yeniDerslikler = yeniDerslikIds.map(id => this.dersliklerData.find(d => d.id === parseInt(id)));
+
+            // Onay penceresi için HTML hazırla
+            const confirmHTML = `
+                <div class="text-start">
+                    <h5 class="mb-3">Sınav Bilgileri:</h5>
+                    <div class="mb-2">
+                        <strong>Ders:</strong> ${extendedProps.dersAd}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Öğretim Görevlisi:</strong> ${extendedProps.unvan} ${extendedProps.akademikPersonelAd}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Bölüm:</strong> ${extendedProps.bolumAd}
+                    </div>
+                    <hr>
+                    <h5 class="mb-3">Değişiklik Detayları:</h5>
+                    <div class="mb-2">
+                        <strong>Eski Tarih/Saat:</strong> ${oldDate.toLocaleDateString('tr-TR')} ${oldDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Yeni Tarih/Saat:</strong> ${newDate.toLocaleDateString('tr-TR')} ${newDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Yeni Bitiş Saati:</strong> ${bitisSaat.toString().padStart(2, '0')}:${baslangicDakika.toString().padStart(2, '0')}
+                    </div>
+                    <hr>
+                    <h5 class="mb-3">Mevcut Derslik ve Gözetmen Bilgileri:</h5>
+                    {eskiDerslikBilgileri.map((d, index) => 
+                        <div class="mb-2">
+                            <strong>Derslik {index + 1}:</strong> {d.derslik} (Kapasite: {d.kapasite})
+                            <br>
+                            <strong>Gözetmen:</strong> {d.gozetmen}
+                        </div>
+                    ).join('')}
+                    <hr>
+                    <h5 class="mb-3">Yeni Derslik ve Gözetmen Atamaları:</h5>
+                    <div id="yeniDerslikContainer">
+                        ${yeniDerslikler.map((derslik, index) => `
+                            <div class="mb-3 derslik-gozetmen-item" data-derslik-id="${derslik.id}">
+                                <div class="mb-2">
+                                    <strong>Derslik ${index + 1}:</strong> ${derslik.ad} (Kapasite: ${derslik.kapasite})
+                                </div>
+                                <div>
+                                    <label>Gözetmen Seç:</label>
+                                    ${gozetmenSelectHTML()}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Onay penceresi göster
+            const result = await Swal.fire({
+                title: 'Sınav Taşıma Onayı',
+                html: confirmHTML,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Taşı',
+                cancelButtonText: 'İptal',
+                width: '800px',
+                didOpen: () => {
+                    // Select2'yi aktifleştir
+                    $('.gozetmen-select').select2({
+                        dropdownParent: $('.swal2-container'),
+                        width: '100%',
+                        placeholder: "Gözetmen Seçiniz"
+                    });
+                },
+                preConfirm: () => {
+                    // Seçilen gözetmenleri topla
+                    const yeniDerslikler = [];
+                    document.querySelectorAll('.derslik-gozetmen-item').forEach(item => {
+                        yeniDerslikler.push({
+                            derslikId: parseInt(item.dataset.derslikId),
+                            gozetmenId: parseInt(item.querySelector('.gozetmen-select').value) || null
+                        });
+                    });
+                    return yeniDerslikler;
+                }
+            });
+
+            if (!result.isConfirmed) {
+                info.revert();
+                return;
+            }
+
+            // Güncelleme verilerini hazırla
             const updateData = {
-                id: event.id,
-                sinavTarihi: newDate.toISOString(),
-                sinavSaati: `${newDate.getHours()}:${newDate.getMinutes()}`
+                id: parseInt(event.id),
+                dbapId: parseInt(event.extendedProps.derBolumAkademikPersonelId || event.extendedProps.dbapId),
+                sinavTarihi: newDate.toISOString().split('T')[0],
+                sinavBaslangicSaati: `${baslangicSaat.toString().padStart(2, '0')}:${baslangicDakika.toString().padStart(2, '0')}:00`,
+                sinavBitisSaati: `${bitisSaat.toString().padStart(2, '0')}:${baslangicDakika.toString().padStart(2, '0')}:00`,
+                derslikler: result.value.map(d => ({
+                    derslikId: d.derslikId,
+                    gozetmenId: d.gozetmenId || 0
+                }))
             };
 
-            const response = await fetch('/SinavDetay/Update', {
+            // Debug için
+            console.log('Derslikler:', result.value);
+            console.log('Event Extended Props:', extendedProps);
+            console.log('Update Data:', updateData);
+
+
+            // Güncelleme isteği gönder
+            fetch('/SinavDetay/Update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                 },
                 body: JSON.stringify(updateData)
-            });
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        Swal.fire('Başarılı!', result.message, 'success');
+                        // Takvimi yenile
+                        this.loadSinavlar();
+                    } else {
+                        info.revert();
+                        throw new Error(result.message);
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                    Swal.fire('Hata!', 'Taşıma işlemi sırasında bir hata oluştu' + error, 'error');
+                });
 
-            const result = await response.json();
-            if (!result.success) {
-                info.revert();
-                this.handleError(new Error(result.message));
+
+            /*if (!updateResponse.ok) {
+                console.log(updateResponse.result);
+                throw new Error("Bir hata var!");
             }
+            const updateResult = await updateResponse.json();
+
+            if (!updateResult.success) {
+                info.revert();
+                throw new Error(updateResult.message);
+            }
+
+            // Başarılı güncelleme mesajı göster
+            await Swal.fire({
+                title: 'Başarılı!',
+                text: 'Sınav başarıyla taşındı.',
+                icon: 'success'
+            });*/
+
         } catch (error) {
             info.revert();
+            console.log(error);
             this.handleError(error);
         } finally {
             this.isProcessing = false;
@@ -492,29 +706,27 @@ class SinavTakvimiManager {
                         },
                         preConfirm: () => {
                             const saat = document.getElementById('sinavSaati').value;
-                            const derslikler = [];
+                            const [baslangicSaat, baslangicDakika] = saat.split(':').map(Number);
+                            const bitisSaat = baslangicSaat + 1;
                             
+                            const derslikler = [];
                             document.querySelectorAll('.derslik-gozetmen-item').forEach(item => {
+                                const gozetmenId = parseInt(item.querySelector('.gozetmen-select').value);
                                 derslikler.push({
                                     derslikId: parseInt(item.dataset.derslikId),
-                                    gozetmenId: parseInt(item.querySelector('.gozetmen-select').value) || null
+                                    gozetmenId: isNaN(gozetmenId) ? null : gozetmenId
                                 });
                             });
 
-                            // Event'in extendedProps'undan dbapId'yi al
-                            const dbapId = event.extendedProps.dbapId;
-                            console.log('Event props:', event.extendedProps);
-                            console.log('DBAP ID:', dbapId);
-
                             const updateData = {
                                 id: event.id,
-                                dbapId: dbapId,
+                                dbapId: parseInt(event.extendedProps.derBolumAkademikPersonelId || event.extendedProps.dbapId),
                                 sinavTarihi: eventDate.toISOString().split('T')[0],
-                                sinavSaati: saat,
+                                sinavBaslangicSaati: `${baslangicSaat.toString().padStart(2, '0')}:${baslangicDakika.toString().padStart(2, '0')}:00`,
+                                sinavBitisSaati: `${bitisSaat.toString().padStart(2, '0')}:${baslangicDakika.toString().padStart(2, '0')}:00`,
                                 derslikler: derslikler
                             };
 
-                            console.log('Update data:', updateData);
                             return updateData;
                         }
                     }).then((result) => {
@@ -559,9 +771,8 @@ class SinavTakvimiManager {
         const droppedEl = info.draggedEl;
         const dropDate = info.date;
 
-        // Seçili derslikleri al
+        // Seçili derslikleri kontrol et
         const selectedDerslikIds = $('#mainDerslikFilter').val();
-
         if (!selectedDerslikIds || selectedDerslikIds.length === 0) {
             Swal.fire({
                 title: 'Hata!',
@@ -571,157 +782,185 @@ class SinavTakvimiManager {
             return false;
         }
 
-        // Seçili dersliklerin bilgilerini al
+        // Seçili dersliklerin detaylarını al
         const selectedDerslikler = selectedDerslikIds.map(id => 
             this.dersliklerData.find(d => d.id === parseInt(id))
-        );
+        ).filter(d => d !== undefined);
 
-        // Sürüklenen dersin bilgilerini al
-        const dbapBilgisi = this.dbapDetailData.find(d => d.id === parseInt(droppedEl.dataset.id));
-
-        // Tarih ve saat bilgisini formatla
-        const eventDate = dropDate;
-        const formattedDate = eventDate.toLocaleDateString('tr-TR');
-        const formattedTime = eventDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-
-        // Gözetmen seçimi için select listesi HTML'i oluştur
-        const gozetmenSelectHTML = `
-            <select class="form-control gozetmen-select">
-                <option value="">Gözetmen Seçiniz</option>
-                ${this.akademikPersonellerData.map(ap => 
-                    `<option value="${ap.id}">${ap.unvan} ${ap.ad}</option>`
-                ).join('')}
-            </select>
-        `;
-
-        // Tüm bilgileri HTML formatında hazırla
-        const detayHTML = `
-            <div style="text-align: left; margin-top: 10px;">
-                <h4>Ders Bilgileri:</h4>
-                <p><strong>Ders:</strong> ${dbapBilgisi.dersAd}</p>
-                <p><strong>Öğretim Görevlisi:</strong> ${dbapBilgisi.unvan} ${dbapBilgisi.akademikPersonelAd}</p>
-                <p><strong>Bölüm:</strong> ${dbapBilgisi.bolumAd}</p>
-                <hr>
-                <h4>Sınav Zamanı:</h4>
-                <p><strong>Tarih:</strong> ${formattedDate}</p>
-                <p><strong>Saat:</strong> ${formattedTime}</p>
-                <hr>
-                <h4>Derslik ve Gözetmen Ataması:</h4>
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Derslik</th>
-                                <th>Gözetmen</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${selectedDerslikler.map(derslik => `
-                                <tr class="derslik-gozetmen-item">
-                                    <td><strong>${derslik.ad}</strong><br>(Kapasite: ${derslik.kapasite} kişi)</td>
-                                    <td>${gozetmenSelectHTML}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
+        // Gözetmen seçimi için HTML oluştur
+        const derslikGozetmenHTML = selectedDerslikler.map(derslik => `
+            <div class="form-group mb-3 derslik-gozetmen-group">
+                <label class="fw-bold">${derslik.ad} (Kapasite: ${derslik.kapasite})</label>
+                <select class="form-control gozetmen-select" data-derslik-id="${derslik.id}">
+                    <option value="">Gözetmen Seçiniz</option>
+                    ${this.akademikPersonellerData.map(ap => 
+                        `<option value="${ap.id}">${ap.unvan} ${ap.ad}</option>`
+                    ).join('')}
+                </select>
             </div>
-        `;
+        `).join('');
 
-        // SweetAlert ile göster
+        // Ders bilgilerini al
+        const dersAd = droppedEl.querySelector('h5').innerText;
+        const akademikPersonel = droppedEl.querySelector('p').innerText;
+
+        // SweetAlert2 ile form göster
         Swal.fire({
             title: 'Sınav Detayları',
-            html: detayHTML,
-            icon: 'info',
+            html: `
+                <div class="text-start">
+                    <div class="mb-4">
+                        <h5>Ders Bilgileri:</h5>
+                        <p class="mb-1"><strong>Ders:</strong> ${dersAd}</p>
+                        <p class="mb-1"><strong>Öğretim Görevlisi:</strong> ${akademikPersonel}</p>
+                        <p class="mb-1"><strong>Tarih:</strong> ${dropDate.toLocaleDateString('tr-TR')}</p>
+                        <p class="mb-1"><strong>Saat:</strong> ${dropDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <hr>
+                    <h5>Derslik ve Gözetmen Atamaları:</h5>
+                    ${derslikGozetmenHTML}
+                </div>
+            `,
             showCancelButton: true,
-            confirmButtonText: 'Onayla',
+            confirmButtonText: 'Kaydet',
             cancelButtonText: 'İptal',
             width: '600px',
-            willClose: () => {
-                // İptal edilirse veya kapatılırsa son eklenen eventi kaldır
-                const lastEvent = calendar.getEvents().slice(-1)[0];
-                if (lastEvent) {
-                    lastEvent.remove();
-                }
-            },
-            preConfirm: () => {
-                // Onaylanırsa son eklenen eventi kaldırma
-                return true;
-            },
             didOpen: () => {
-                // Select2'yi gözetmen seçimleri için aktifleştir
+                // Select2'yi aktifleştir
                 $('.gozetmen-select').select2({
                     dropdownParent: $('.swal2-container'),
                     width: '100%',
                     placeholder: "Gözetmen Seçiniz"
                 });
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Seçili gözetmenleri al
-                const derslikGozetmenler = [];
-                $('.derslik-gozetmen-item').each(function(index) {
-                    derslikGozetmenler.push({
-                        derslikId: parseInt(selectedDerslikIds[index]),
-                        gozetmenId: parseInt($(this).find('.gozetmen-select').val()) || null
+            },
+            preConfirm: () => {
+                // Form verilerini topla
+                const derslikler = [];
+                $('.derslik-gozetmen-group').each(function() {
+                    const derslikId = $(this).find('.gozetmen-select').data('derslik-id');
+                    const gozetmenId = $(this).find('.gozetmen-select').val();
+                    derslikler.push({
+                        derslikId: parseInt(derslikId),
+                        gozetmenId: gozetmenId ? parseInt(gozetmenId) : null
                     });
                 });
 
-                // Yeni sınav verisi oluştur
-                const sinavData = {
-                    dbapId: parseInt(droppedEl.dataset.id),
-                    sinavTarihi: eventDate.toISOString().split('T')[0],
-                    sinavSaati: `${eventDate.getHours().toString().padStart(2, '0')}:${eventDate.getMinutes().toString().padStart(2, '0')}:00`,
-                    derslikler: derslikGozetmenler
+                // Sınav verisi oluştur
+                return {
+                    derBolumAkademikPersonelId: parseInt(droppedEl.dataset.id),
+                    sinavTarihi: dropDate.toISOString().split('T')[0],
+                    sinavBaslangicSaati: `${dropDate.getHours().toString().padStart(2, '0')}:${dropDate.getMinutes().toString().padStart(2, '0')}:00`,
+                    sinavBitisSaati: `${(dropDate.getHours() + 1).toString().padStart(2, '0')}:${dropDate.getMinutes().toString().padStart(2, '0')}:00`,
+                    derslikler: derslikler
                 };
-
-                // API'ye kayıt isteği gönder
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // API isteği gönder
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                
                 fetch('/SinavDetay/Add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        'RequestVerificationToken': token
                     },
-                    body: JSON.stringify(sinavData)
+                    body: JSON.stringify(result.value)
                 })
                 .then(response => response.json())
-                .then(result => {
-                    if (!result.success) {
-                        Swal.fire({
-                            title: 'Hata!',
-                            text: result.message || 'Sınav eklenirken bir hata oluştu',
-                            icon: 'error'
-                        });
-                        return false;
-                    } else {
+                .then(data => {
+                    if (data.success) {
                         Swal.fire({
                             title: 'Başarılı!',
-                            text: 'Sınav başarıyla eklendi',
+                            text: data.message,
                             icon: 'success'
                         });
-                        // Takvimi yenile
                         this.loadSinavlar();
+                    } else {
+                        throw new Error(data.message);
                     }
                 })
                 .catch(error => {
                     Swal.fire({
                         title: 'Hata!',
-                        text: 'Sınav eklenirken bir hata oluştu',
+                        text: error.message,
                         icon: 'error'
                     });
                 });
             }
         });
 
-        return false; // Event'ın varsayılan eklenmesini engelle
+        return false;
     }
 
     /**
      * Yeni event takvime eklendiğinde
      */
-    handleEventReceive(info) {
+    async handleEventReceive(info) {
         const event = info.event;
         console.log('Yeni event alındı:', event);
+        
+        // Eğer bu bir güncelleme ise ve event'in ID'si varsa
+        if (event.id) {
+            const baslangicSaat = event.start.getHours();
+            const baslangicDakika = event.start.getMinutes();
+            const bitisSaat = baslangicSaat + 1;
+
+            const updateData = {
+                id: parseInt(event.id),
+                dbapId: parseInt(event.extendedProps.derBolumAkademikPersonelId || event.extendedProps.dbapId),
+                sinavTarihi: event.start.toISOString().split('T')[0],
+                sinavBaslangicSaati: `${baslangicSaat.toString().padStart(2, '0')}:${baslangicDakika.toString().padStart(2, '0')}:00`,
+                sinavBitisSaati: `${bitisSaat.toString().padStart(2, '0')}:${baslangicDakika.toString().padStart(2, '0')}:00`,
+                derslikler: $('#mainDerslikFilter').val().map(derslikId => ({
+                    derslikId: parseInt(derslikId),
+                    gozetmenId: null
+                }))
+            };
+
+            try {
+                const response = await fetch('/SinavDetay/Update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+
+                // Başarılı güncelleme sonrası takvimi yenile
+                this.loadSinavlar();
+            } catch (error) {
+                this.handleError(error);
+                event.remove();
+            }
+        }
+    }
+
+    /**
+     * Takvim verilerini PDF'e aktarır
+     */
+    exportToPDF() {
+        const calendarElement = document.getElementById('calendar'); // FullCalendar div'inin ID'si
+        const { jsPDF } = window.jspdf; // jsPDF kütüphanesini al
+
+        html2canvas(calendarElement, { scale: 1 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('landscape', 'mm', 'a4');
+            const imgWidth = 297;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save('takvim.pdf');
+        });
+        // Butona bağlamak için:
+        //document.getElementById('exportPDF').addEventListener('click', exportCalendarToPDF);
+
     }
 
     /**

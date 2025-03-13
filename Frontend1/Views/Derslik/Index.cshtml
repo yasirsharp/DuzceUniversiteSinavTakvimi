@@ -8,7 +8,9 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center">
         <h2>@ViewData["Title"]</h2>
-        <button id="addRowBtn" type="button" class="btn btn-secondary">Ekle</button>
+        <button id="addRowBtn" type="button" class="btn btn-secondary">
+            <i class="bi bi-plus-lg"></i> Yeni Derslik
+        </button>
     </div>
     <table class="table table-bordered mt-3" id="dataTable">
         <thead class="table-light">
@@ -27,38 +29,19 @@
                     <td>@item.Ad</td>
                     <td>@item.Kapasite</td>
                     <td>
-                        <button class="btn btn-warning btn-sm edit-btn" data-id="@item.Id" data-name="@item.Ad" data-capacity="@item.Kapasite">Düzenle</button>
-                        <button class="btn btn-danger btn-sm delete-btn" data-id="@item.Id" data-name="@item.Ad">Sil</button>
+                        <button class="btn btn-warning btn-sm" onclick="handleEdit(@item.Id, this.closest('tr'))">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="handleDelete(@item.Id, '@item.Ad', '@item.Kapasite')">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </td>
                 </tr>
             }
-        </tbody>
-        <tbody id="inputRow" style="display: none;">
-            <tr>
-                <th scope="row">#</th>
-                <td>
-                    <input type="text" id="newAd" class="form-control" placeholder="Derslik adı giriniz">
-                </td>
-                <td>
-                    <input type="number" id="newKapasite" class="form-control" placeholder="Kapasite giriniz">
-                </td>
-                <td>
-                    <button class="btn btn-success btn-sm" id="submitBtn">Kaydet</button>
-                    <button class="btn btn-secondary btn-sm" id="cancelNewRowBtn">İptal</button>
-                </td>
-            </tr>
         </tbody>
     </table>
 </div>
 
 @section Scripts {
     <script src="~/js/component-derslik.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const entityName = 'Derslik';
-            initializeDeleteButtons(entityName);
-            initializeAddButton(entityName);
-            initializeEditButtons(entityName);
-        });
-    </script>
 }

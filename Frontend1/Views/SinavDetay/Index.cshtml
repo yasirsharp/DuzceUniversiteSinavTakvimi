@@ -4,10 +4,18 @@
 @using Microsoft.AspNetCore.Html
 @{
     ViewData["Title"] = $"Sınav Detay {ViewData["BolumID"]}";
-    var dbap = ViewData["DBAP"] as IDataResult<List<DersBolumAkademikPersonel>>;
-    var dbap_detail = ViewData["DBAPDetail"] as IDataResult<List<DersBolumAkademikPersonelDTO>>;
+    var dbap = ViewData["DersBolumAkademikPersonel"] as IDataResult<List<DersBolumAkademikPersonel>>;
+    var dbap_detail = ViewData["DersBolumAkademikPersonelDetails"] as IDataResult<List<DersBolumAkademikPersonelDTO>>;
     var sinavs = ViewData["SinavDetay"] as IDataResult<List<SinavDetayDTO>>;
     var derslikler = ViewData["Derslikler"] as IDataResult<List<Derslik>>;
+}
+
+<!-- Veri kontrolü için debug bilgisi ekleyelim -->
+@if (sinavs?.Data == null)
+{
+    <div class="alert alert-warning">
+        Sınav verisi bulunamadı!
+    </div>
 }
 
 @section Styles {
@@ -205,7 +213,7 @@
                                     {
                                         BolumId = g.Key,
                                         BolumAd = g.First().BolumAd,
-                                        Dersler = g.GroupBy(d => d.DersId)
+                                        Dersler = g.GroupBy(d => d.Id)
                                                   .Select(d => d.First())
                                                   .OrderBy(d => d.DersAd)
                                     })
@@ -255,7 +263,29 @@
     </div>
 </div>
 
+<!-- Debug bilgisi -->
+<div class="d-none">
+    <h4>Orijinal Veri:</h4>
+    @foreach(var item in dbap_detail.Data)
+    {
+        <p>Id: @item.Id, DersId: @item.DersId, Ders: @item.DersAd, Bolum: @item.BolumAd</p>
+    }
+    
+    <h4>Gruplanmış Veri:</h4>
+    @foreach(var bolum in gruplanmisDersler)
+    {
+        <h5>@bolum.BolumAd</h5>
+        @foreach(var ders in bolum.Dersler)
+        {
+            <p>Id: @ders.Id, DersId: @ders.DersId, Ders: @ders.DersAd</p>
+        }
+    }
+</div>
+
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <!-- jQuery UI -->
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <!-- Select2 -->

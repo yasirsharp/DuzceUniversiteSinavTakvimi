@@ -2,6 +2,7 @@
 using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 
 namespace Frontend1.Controllers
 {
@@ -19,17 +20,20 @@ namespace Frontend1.Controllers
         public IActionResult Index()
         {
             var bolumIds = GetBolumIdsFromToken();
-            ViewData["BolumIds"] = bolumIds; // Bölüm ID'lerini View'a gönderiyoruz
+            ViewData["BolumIds"] = bolumIds;
 
+            // Distinct() ile tekrar eden bölümleri filtrele
+            var uniqueBolumIds = bolumIds.Distinct().ToList();
             List<Bolum> bolums = new List<Bolum>();
 
-            foreach (var item in bolumIds)
+            foreach (var item in uniqueBolumIds)
             {
                 var result = _bolumService.GetById(item);
                 if(result.Success) bolums.Add(result.Data);
             }
 
-            return View(bolums);
+            // Bölümleri ada göre sırala
+            return View(bolums.OrderBy(b => b.Ad).ToList());
         }
 
         private List<int> GetBolumIdsFromToken()

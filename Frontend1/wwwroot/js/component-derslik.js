@@ -1,313 +1,274 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
-    const entityName = 'Derslik';
-    let isProcessing = false;
+﻿// Çift tıklama kontrolü için değişken
+let isProcessing = false;
+let isAddFormVisible = false;
 
-    const initialized = {
-        delete: false,
-        add: false,
-        edit: false
-    };
-
-    if (!initialized.delete) {
-        initializeDeleteButtons(entityName);
-        initialized.delete = true;
-    }
-
-    if (!initialized.add) {
-        initializeAddButton(entityName);
-        initialized.add = true;
-    }
-
-    if (!initialized.edit) {
-        initializeEditButtons(entityName);
-        initialized.edit = true;
+document.addEventListener('DOMContentLoaded', function() {
+    // Ekle butonu için event listener
+    const addButton = document.getElementById('addRowBtn');
+    if (addButton) {
+        addButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!isProcessing && !isAddFormVisible) {
+                handleAddRow();
+            }
+        });
     }
 });
 
+// Yeni satır ekleme formu göster
+async function handleAddRow() {
+    try {
+        isProcessing = true;
+        isAddFormVisible = true;
+
+        // Varolan form varsa kaldır
+        const existingForm = document.getElementById('addForm');
+        if (existingForm) {
+            existingForm.remove();
+        }
+
+        // Yeni form satırı oluştur
+        const newRow = `
+            <tr id="addForm">
+                <th scope="row">#</th>
+                <td><input type="text" class="form-control" id="newDerslikAd" placeholder="Derslik Adı"></td>
+                <td><input type="number" class="form-control" id="newKapasite" placeholder="Kapasite"></td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="handleSaveNew()">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="cancelAddForm()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        // Formu tablonun en üstüne ekle
+        const tbody = document.getElementById('tableBody');
+        if (tbody) {
+            tbody.insertAdjacentHTML('afterbegin', newRow);
+            
+            // Input'a odaklan
+            setTimeout(() => {
+                const derslikInput = document.getElementById('newDerslikAd');
+                if (derslikInput) {
+                    derslikInput.focus();
+                }
+            }, 100);
+        }
+    } catch (error) {
+        console.error('Form ekleme hatası:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Form eklenirken bir hata oluştu'
+        });
+    } finally {
+        isProcessing = false;
+    }
+}
+
+// Ekleme formunu iptal et
+function cancelAddForm() {
+    const addForm = document.getElementById('addForm');
+    if (addForm) {
+        addForm.remove();
+    }
+    isAddFormVisible = false;
+}
+
+// Tüm formları iptal et
+function cancelAllForms() {
+    cancelAddForm();
+    window.location.reload();
+}
+
+// Yeni derslik kaydetme
+async function handleSaveNew() {
+    if (isProcessing) return;
+    isProcessing = true;
+
+    const ad = document.getElementById('newDerslikAd').value;
+    const kapasite = document.getElementById('newKapasite').value;
+
+    if (!validateForm(ad, kapasite)) {
+        isProcessing = false;
+        return;
+    }
+
+    try {
+        const response = await fetch('/Derslik/Add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ad: ad, kapasite: parseInt(kapasite) })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: 'Derslik başarıyla eklendi.',
+                timer: 1500
+            }).then(() => window.location.reload());
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: error.message || 'Bir hata oluştu'
+        });
+    } finally {
+        isProcessing = false;
+    }
+}
+
+// Düzenleme formunu göster
+function handleEdit(id, currentRow) {
+    if (isProcessing) return;
+    isProcessing = true;
+
+    // Eğer zaten bir düzenleme/ekleme formu açıksa, iptal et
+    cancelAllForms();
+
+    const currentAd = currentRow.querySelector('td:nth-child(2)').textContent;
+    const currentKapasite = currentRow.querySelector('td:nth-child(3)').textContent;
+
+    // Mevcut içeriği form ile değiştir
+    currentRow.innerHTML = `
+        <th scope="row">${id}</th>
+        <td><input type="text" class="form-control" id="editDerslikAd" value="${currentAd}"></td>
+        <td><input type="number" class="form-control" id="editKapasite" value="${currentKapasite}"></td>
+        <td>
+            <button class="btn btn-success btn-sm" onclick="handleSaveEdit(${id})">
+                <i class="bi bi-check-lg"></i>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelAllForms()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </td>
+    `;
+
+    document.getElementById('editDerslikAd').focus();
+    isProcessing = false;
+}
+
+// Düzenlemeyi kaydet
+async function handleSaveEdit(id) {
+    if (isProcessing) return;
+    isProcessing = true;
+
+    const ad = document.getElementById('editDerslikAd').value;
+    const kapasite = document.getElementById('editKapasite').value;
+
+    if (!validateForm(ad, kapasite)) {
+        isProcessing = false;
+        return;
+    }
+
+    try {
+        const response = await fetch('/Derslik/Update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ad, kapasite: parseInt(kapasite) })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: 'Derslik başarıyla güncellendi.',
+                timer: 1500
+            }).then(() => window.location.reload());
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: error.message || 'Bir hata oluştu'
+        });
+    } finally {
+        isProcessing = false;
+    }
+}
+
 // Silme işlemi
-function initializeDeleteButtons(entityName) {
-    document.querySelectorAll('.delete-btn').forEach(button => {
-        button.replaceWith(button.cloneNode(true));
-        
-        document.querySelector(`button[data-id="${button.dataset.id}"]`).addEventListener('click', async function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (isProcessing) return;
-            isProcessing = true;
-
-            try {
-                const id = this.getAttribute('data-id');
-                const name = this.getAttribute('data-name');
-
-                const result = await Swal.fire({
-                    title: 'Emin misiniz?',
-                    text: `"${name}" dersliğini silmek istediğinize emin misiniz?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Evet, Sil!',
-                    cancelButtonText: 'İptal'
-                });
-
-                if (result.isConfirmed) {
-                    await deleteEntity(id, entityName);
-                }
-            } finally {
-                isProcessing = false;
-            }
-        }, { once: true });
-    });
-}
-
-// API işlemleri
-function deleteEntity(id, entityName) {
-    fetch(`/${entityName}/Delete/${id}`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Başarılı!',
-                text: result.message,
-                toast: true,
-                position: 'top-end',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            document.querySelector(`tr[data-id="${id}"]`).remove();
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Hata!',
-                text: result.message,
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        }
-    })
-    .catch(error => {
-        Swal.fire({
-            icon: 'error',
-            title: 'Hata!',
-            text: 'Bir hata oluştu: ' + error,
-            toast: true,
-            position: 'top-end',
-            timer: 3000,
-            showConfirmButton: false
-        });
-    });
-}
-
-// Ekleme işlemi
-function initializeAddButton(entityName) {
-    const inputRow = document.getElementById("inputRow");
-    const tableBody = document.getElementById("tableBody");
+async function handleDelete(id, ad, kapasite) {
+    if (isProcessing) return;
     
-    // Ekle butonuna tıklandığında
-    document.getElementById("addRowBtn").addEventListener("click", function () {
-        // Input satırını göster ve en üste taşı
-        inputRow.style.display = "table-row-group";
-        // Input row'u tablonun en üstüne taşı
-        tableBody.parentNode.insertBefore(inputRow, tableBody);
-        // Input alanlarını temizle
-        document.getElementById('newAd').value = '';
-        document.getElementById('newKapasite').value = '';
+    const result = await Swal.fire({
+        title: 'Emin misiniz?',
+        text: `"${ad}" dersliğini silmek istediğinize emin misiniz?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Evet, Sil!',
+        cancelButtonText: 'İptal'
     });
 
-    // İptal butonuna tıklandığında
-    document.getElementById("cancelNewRowBtn").addEventListener("click", function() {
-        // Input satırını gizle
-        inputRow.style.display = "none";
-        // Input alanlarını temizle
-        document.getElementById('newAd').value = '';
-        document.getElementById('newKapasite').value = '';
-        
-        // İptal edildiğini bildir
-        Swal.fire({
-            icon: 'info',
-            title: 'İptal Edildi',
-            text: 'Ekleme işlemi iptal edildi.',
-            toast: true,
-            position: 'top-end',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    });
-
-    // Kaydet butonuna tıklandığında
-    document.getElementById("submitBtn").addEventListener("click", function() {
-        const newAd = document.getElementById('newAd').value;
-        const newKapasite = document.getElementById('newKapasite').value;
-        
-        if (!newAd || !newKapasite) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Uyarı!',
-                text: 'Lütfen tüm alanları doldurunuz.',
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
+    if (result.isConfirmed) {
+        isProcessing = true;
+        try {
+            const response = await fetch('/Derslik/Delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: id,
+                    kapasite: kapasite,
+                    ad: ad
+                })
             });
-            return;
-        }
 
-        if (newKapasite <= 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Uyarı!',
-                text: 'Kapasite 0\'dan büyük olmalıdır.',
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
-            });
-            return;
-        }
-
-        addEntity(newAd, newKapasite, entityName);
-    });
-}
-
-// Düzenleme işlemi
-function initializeEditButtons(entityName) {
-    document.querySelectorAll('.edit-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const currentName = this.getAttribute('data-name');
-            const currentCapacity = this.getAttribute('data-capacity');
-
-            Swal.fire({
-                title: 'Derslik Düzenle',
-                html: `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <label for="swal-input1" style="width: 80px;">Derslik Adı:</label>
-                        <input id="swal-input1" class="swal2-input" placeholder="Derslik adı" value="${currentName}" style="margin: 0;">
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <label for="swal-input2" style="width: 80px;">Kapasite:</label>
-                        <input id="swal-input2" class="swal2-input" type="number" placeholder="Kapasite" value="${currentCapacity}" style="margin: 0;">
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Güncelle',
-                cancelButtonText: 'İptal',
-                preConfirm: () => {
-                    const ad = document.getElementById('swal-input1').value;
-                    const kapasite = document.getElementById('swal-input2').value;
-                    if (!ad || !kapasite) {
-                        Swal.showValidationMessage('Lütfen tüm alanları doldurunuz');
-                        return false;
-                    }
-                    if (kapasite <= 0) {
-                        Swal.showValidationMessage('Kapasite 0\'dan büyük olmalıdır');
-                        return false;
-                    }
-                    return { ad, kapasite }
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    updateEntity(id, result.value.ad, result.value.kapasite, entityName);
-                }
-            });
-        });
-    });
-}
-
-function addEntity(name, capacity, entityName) {
-    fetch(`/${entityName}/Add`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ Ad: name, Kapasite: parseInt(capacity) })
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Başarılı!',
-                text: result.message,
-                toast: true,
-                position: 'top-end',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            location.reload();
-        } else {
+            const data = await response.json();
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Başarılı!',
+                    text: 'Derslik başarıyla silindi.',
+                    timer: 1500
+                }).then(() => window.location.reload());
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
             Swal.fire({
                 icon: 'error',
                 title: 'Hata!',
-                text: result.message,
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
+                text: error.message || 'Bir hata oluştu'
             });
+        } finally {
+            window.location.reload()
+            isProcessing = false;
         }
-    })
-    .catch(error => {
-        Swal.fire({
-            icon: 'error',
-            title: 'Hata!',
-            text: 'Bir hata oluştu: ' + error,
-            toast: true,
-            position: 'top-end',
-            timer: 3000,
-            showConfirmButton: false
-        });
-    });
+    }
 }
 
-function updateEntity(id, newName, newCapacity, entityName) {
-    fetch(`/${entityName}/Update`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ Id: id, Ad: newName, Kapasite: parseInt(newCapacity) })
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Başarılı!',
-                text: result.message,
-                toast: true,
-                position: 'top-end',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            location.reload();
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Hata!',
-                text: result.message,
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        }
-    })
-    .catch(error => {
+// Form validasyonu
+function validateForm(ad, kapasite) {
+    if (!ad || !kapasite) {
         Swal.fire({
-            icon: 'error',
-            title: 'Hata!',
-            text: 'Bir hata oluştu: ' + error,
-            toast: true,
-            position: 'top-end',
-            timer: 3000,
-            showConfirmButton: false
+            icon: 'warning',
+            title: 'Uyarı!',
+            text: 'Lütfen tüm alanları doldurunuz.'
         });
-    });
+        return false;
+    }
+
+    if (parseInt(kapasite) <= 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Uyarı!',
+            text: 'Kapasite 0\'dan büyük olmalıdır.'
+        });
+        return false;
+    }
+
+    return true;
 }

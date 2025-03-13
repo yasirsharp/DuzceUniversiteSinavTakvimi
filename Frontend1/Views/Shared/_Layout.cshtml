@@ -77,6 +77,13 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "SinavDerslik" ? "active" : "")"
+                                   asp-controller="SinavDerslik" asp-action="Index">
+                                    <i class="bi bi-door-open"></i>
+                                    Sınav Derslik Yönetimi
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "BolumDersAkademikPersonel" ? "active" : "")"
                                    asp-controller="BolumDersAkademikPersonel" asp-action="index">
                                     <i class="bi bi-link-45deg"></i>
@@ -98,14 +105,7 @@
                     <div class="collapse submenu" id="takvimSubmenu">
                         <ul class="nav flex-column">
                             <li class="nav-item">
-                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "SinavDetay" ? "active" : "")"
-                                   asp-controller="SinavDetay" asp-action="Index">
-                                    <i class="bi bi-calendar-check"></i>
-                                    Sınav Takvimi
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "GorevliSinavYonetim" ? "active" : "")"
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "SinavDetay" || ViewContext.RouteData.Values["Controller"].ToString() == "GorevliSinavYonetim" ? "active" : "")"
                                    asp-controller="GorevliSinavYonetim" asp-action="Index">
                                     <i class="bi bi-calendar-check"></i>
                                     Sınav Ekle/Sil Takvimi

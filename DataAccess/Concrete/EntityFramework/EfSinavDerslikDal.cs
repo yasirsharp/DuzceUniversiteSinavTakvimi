@@ -21,8 +21,9 @@ namespace DataAccess.Concrete.EntityFramework
                              select new SinavDetay
                              {
                                  Id = s.Id,
-                                 DBAPId = s.DBAPId,
-                                 SinavSaati = s.SinavSaati,
+                                 DerBolumAkademikPersonelId = s.DerBolumAkademikPersonelId,
+                                 SinavBaslangicSaati = s.SinavBaslangicSaati,
+                                 SinavBitisSaati = s.SinavBitisSaati,
                                  SinavTarihi = s.SinavTarihi
                              };
                 return result.ToList();
@@ -39,8 +40,9 @@ namespace DataAccess.Concrete.EntityFramework
                              select new SinavDetay
                              {
                                  Id = s.Id,
-                                 DBAPId = s.DBAPId,
-                                 SinavSaati = s.SinavSaati,
+                                 DerBolumAkademikPersonelId = s.DerBolumAkademikPersonelId,
+                                 SinavBaslangicSaati = s.SinavBaslangicSaati,
+                                 SinavBitisSaati = s.SinavBitisSaati,
                                  SinavTarihi = s.SinavTarihi
                              };
                 return result.ToList();
