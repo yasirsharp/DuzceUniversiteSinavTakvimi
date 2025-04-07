@@ -1,4 +1,4 @@
-namespace Frontend2._0.Models
+namespace AIWebSite3._0.Models
 {
     public class ErrorViewModel
     {

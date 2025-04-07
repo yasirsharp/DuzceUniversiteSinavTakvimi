@@ -1,71 +1,99 @@
-﻿using Business.Abstract;
-using Business.Concrete;
-using DataAccess.Concrete;
-using Entity.Concrete;
+﻿using Entity.Concrete;
+using Frontend1.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend1.Controllers
 {
     public class DersController : Controller
     {
-        IDersService _dersService;
+        private readonly HttpService _httpService;
 
-        public DersController(IDersService dersService)
+        public DersController(HttpService httpService)
         {
-            _dersService = dersService;
+            _httpService = httpService;
         }
 
         [HttpGet]
         [Route("Ders/index")]
         [Route("Ders/Yonetim")]
         [Route("Ders/DersYonetim")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View(_dersService.GetList().Data);
+            try
+            {
+                var dersler = await _httpService.GetAsync<List<Ders>>("api/ders");
+                return View(dersler);
+            }
+            catch (Exception ex)
+            {
+                return View(new List<Ders>());
+            }
         }
+
         [HttpPost]
         [Route("/Ders/Add")]
-        public IActionResult Add([FromBody] Ders ders)
+        public async Task<IActionResult> Add([FromBody] Ders ders)
         {
-            var result = _dersService.Add(ders);
-            if(result.Success) return Ok();
-
-            return BadRequest(new { message = result.Message });
+            try
+            {
+                var result = await _httpService.PostAsync<object>("api/ders", ders);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-
-
         [HttpPost]
-        public IActionResult Delete([FromBody] Ders ders)
+        public async Task<IActionResult> Delete([FromBody] Ders ders)
         {
-            var result = _dersService.Delete(ders);
-            if (result.Success) return Ok();
-
-            return BadRequest(new { message = result.Message });
+            try
+            {
+                var result = await _httpService.DeleteAsync<object>($"api/ders/{ders.Id}");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var ders = _dersService.GetById(id);
-            if (ders.Data != null)
+            try
             {
-                return Ok(ders.Data); // Ders nesnesini JSON olarak döner
+                var ders = await _httpService.GetAsync<Ders>($"api/ders/{id}");
+                if (ders != null)
+                {
+                    return Ok(ders);
+                }
+                return NotFound();
             }
-            return NotFound();
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
+
         [HttpPost]
-        public IActionResult Update([FromBody] Ders ders)
+        public async Task<IActionResult> Update([FromBody] Ders ders)
         {
-            if (ders == null)
+            try
             {
-                return BadRequest("Ders verisi eksik veya geçersiz.");
+                if (ders == null)
+                {
+                    return BadRequest(new { message = "Ders verisi eksik veya geçersiz." });
+                }
+
+                var result = await _httpService.PutAsync<object>("api/ders", ders);
+                return Ok(result);
             }
-
-            var result = _dersService.Update(ders);
-            if (result.Success) return Ok();
-
-            return BadRequest(new { message = result.Message });
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

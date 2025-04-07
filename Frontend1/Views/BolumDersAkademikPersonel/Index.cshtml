@@ -172,6 +172,7 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
+                                <td></td>
                                 <td>
                                     <button id="saveButton" class="btn btn-primary btn-sm" disabled>Kaydet</button>
                                 </td>
@@ -179,6 +180,7 @@
                             @foreach (var item in bolumDersAkademikPersonelEslestirmeleri.Data)
                             {
                                 <tr>
+                                    <td>@item.Id</td>
                                     <td>@item.BolumAd</td>
                                     <td>@item.DersAd</td>
                                     <td>@item.AkademikPersonelAd</td>

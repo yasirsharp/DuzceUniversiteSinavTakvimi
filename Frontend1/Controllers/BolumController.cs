@@ -1,64 +1,77 @@
-﻿using Business.Abstract;
-using Business.Concrete;
-using DataAccess.Concrete;
-using Entity.Concrete;
+﻿using Entity.Concrete;
+using Frontend1.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend1.Controllers
 {
     public class BolumController : Controller
     {
-        IBolumService _bolumService;
+        private readonly HttpService _httpService;
 
-        public BolumController(IBolumService bolumService)
+        public BolumController(HttpService httpService)
         {
-            _bolumService = bolumService;
+            _httpService = httpService;
         }
 
         [HttpGet]
         [Route("Bolum/index")]
         [Route("Bolum/Yonetim")]
         [Route("Bolum/BolumYonetim")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View(_bolumService.GetList().Data);
+            try
+            {
+                var bolumler = await _httpService.GetAsync<List<Bolum>>("api/bolum");
+                return View(bolumler);
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                return View(new List<Bolum>());
+            }
         }
+
         [HttpPost]
         [Route("/Bolum/Add")]
-        public IActionResult Add([FromBody] Bolum bolum)
+        public async Task<IActionResult> Add([FromBody] Bolum bolum)
         {
-            var result = _bolumService.Add(bolum);
-            return Ok(result);
+            try
+            {
+                var result = await _httpService.PostAsync<object>("api/bolum", bolum);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-
-
         [HttpPost]
-        public IActionResult Delete([FromBody] Bolum bolum)
+        public async Task<IActionResult> Delete([FromBody] Bolum bolum)
         {
-            var result = _bolumService.Delete(bolum);
-            if (result.Success)
+            try
             {
-                return Ok(result); // Başarılı yanıt
+                var result = await _httpService.DeleteAsync<object>($"api/bolum/{bolum.Id}");
+                return Ok(result);
             }
-            return BadRequest(result);
-
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
-        [HttpPost]
-        public IActionResult Update([FromBody] Bolum bolum)
-        {
-            var _bolum = _bolumService.GetById(bolum.Id);
-            if (_bolum.Data == null)
-            {
-                return BadRequest(new { message = _bolum.Message });
-            }
 
-            var result = _bolumService.Update(bolum);
-            if (!result.Success)
+        [HttpPost]
+        public async Task<IActionResult> Update([FromBody] Bolum bolum)
+        {
+            try
             {
-                return BadRequest(result);
+                var result = await _httpService.PutAsync<object>("api/bolum", bolum);
+                return Ok(result);
             }
-            return Ok(result); // Başarılı yanıt
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

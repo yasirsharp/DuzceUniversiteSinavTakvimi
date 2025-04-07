@@ -1,5 +1,5 @@
-using Business.Abstract;
 using Core.Entities.Concrete;
+using Frontend1.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,61 +10,67 @@ namespace Frontend1.Controllers
     [Authorize(Roles = "super.admin")]
     public class UserOperationClaimsController : ControllerBase
     {
-        private readonly IUserOperationClaimService _userOperationClaimService;
+        private readonly HttpService _httpService;
 
-        public UserOperationClaimsController(IUserOperationClaimService userOperationClaimService)
+        public UserOperationClaimsController(HttpService httpService)
         {
-            _userOperationClaimService = userOperationClaimService;
+            _httpService = httpService;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var result = _userOperationClaimService.GetAll();
-            if (result.Success)
+            try
             {
+                var result = await _httpService.GetAsync<List<UserOperationClaim>>("api/useroperationclaim");
                 return Ok(result);
             }
-            return BadRequest(result.Message);
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var result = _userOperationClaimService.GetById(id);
-            if (result.Success)
+            try
             {
+                var result = await _httpService.GetAsync<UserOperationClaim>($"api/useroperationclaim/{id}");
                 return Ok(result);
             }
-            return BadRequest(result.Message);
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost]
-        public IActionResult Add([FromBody] UserOperationClaim userOperationClaim)
+        public async Task<IActionResult> Add([FromBody] UserOperationClaim userOperationClaim)
         {
-            var result = _userOperationClaimService.Add(userOperationClaim);
-            if (result.Success)
+            try
             {
+                var result = await _httpService.PostAsync<object>("api/useroperationclaim", userOperationClaim);
                 return Ok(result);
             }
-            return BadRequest(result.Message);
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var userOperationClaim = _userOperationClaimService.GetById(id).Data;
-            if (userOperationClaim == null)
+            try
             {
-                return NotFound("Kullanıcı yetkisi bulunamadı.");
-            }
-
-            var result = _userOperationClaimService.Delete(userOperationClaim);
-            if (result.Success)
-            {
+                var result = await _httpService.DeleteAsync<object>($"api/useroperationclaim/{id}");
                 return Ok(result);
             }
-            return BadRequest(result.Message);
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 } 

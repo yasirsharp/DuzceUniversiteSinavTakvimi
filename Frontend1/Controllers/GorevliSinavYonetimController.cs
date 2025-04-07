@@ -1,5 +1,5 @@
-﻿using Business.Abstract;
-using Entity.Concrete;
+﻿using Entity.Concrete;
+using Frontend1.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -8,47 +8,49 @@ namespace Frontend1.Controllers
 {
     public class GorevliSinavYonetimController : Controller
     {
-        private readonly IBolumService _bolumService;
-        private readonly ISinavDetayService _sinavDetayService;
+        private readonly HttpService _httpService;
 
-        public GorevliSinavYonetimController(IBolumService bolumService, ISinavDetayService sinavDetayService)
+        public GorevliSinavYonetimController(HttpService httpService)
         {
-            _bolumService = bolumService;
-            _sinavDetayService = sinavDetayService;
+            _httpService = httpService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var bolumIds = GetBolumIdsFromToken();
-            ViewData["BolumIds"] = bolumIds;
-
-            // Distinct() ile tekrar eden bölümleri filtrele
-            var uniqueBolumIds = bolumIds.Distinct().ToList();
-            List<Bolum> bolums = new List<Bolum>();
-
-            foreach (var item in uniqueBolumIds)
+            try
             {
-                var result = _bolumService.GetById(item);
-                if(result.Success) bolums.Add(result.Data);
-            }
+                var bolumIds = GetBolumIdsFromToken();
+                ViewData["BolumIds"] = bolumIds;
 
-            // Bölümleri ada göre sırala
-            return View(bolums.OrderBy(b => b.Ad).ToList());
+                var uniqueBolumIds = bolumIds.Distinct().ToList();
+                List<Bolum> bolums = new List<Bolum>();
+
+                foreach (var item in uniqueBolumIds)
+                {
+                    var result = await _httpService.GetAsync<Bolum>($"api/bolum/{item}");
+                    if (result != null) bolums.Add(result);
+                }
+
+                return View(bolums.OrderBy(b => b.Ad).ToList());
+            }
+            catch (Exception ex)
+            {
+                return View(new List<Bolum>());
+            }
         }
 
         private List<int> GetBolumIdsFromToken()
         {
-            var token = HttpContext.Request.Cookies["AuthToken"]; // Cookie'den JWT Token'ı al
+            var token = HttpContext.Request.Cookies["AuthToken"];
             if (string.IsNullOrEmpty(token))
                 return new List<int>();
 
             try
             {
                 var handler = new JwtSecurityTokenHandler();
-                var jwtToken = handler.ReadJwtToken(token); // Token'ı çözümle
+                var jwtToken = handler.ReadJwtToken(token);
                 var claims = jwtToken.Claims;
 
-                // "X.BolumId" formatındaki tüm claim'leri seç ve int listesi olarak döndür
                 var bolumIds = claims
                     .Where(c => c.Type.EndsWith(".BolumId"))
                     .Select(c => int.TryParse(c.Value, out int id) ? id : (int?)null)
@@ -65,10 +67,17 @@ namespace Frontend1.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetSinavlarByBolum(int bolumId)
+        public async Task<JsonResult> GetSinavlarByBolum(int bolumId)
         {
-            var sinavlar = _sinavDetayService.GetByBolumId(bolumId);
-            return Json(sinavlar);
+            try
+            {
+                var sinavlar = await _httpService.GetAsync<List<SinavDetay>>($"api/sinavdetay/bolum/{bolumId}");
+                return Json(sinavlar);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
     }
 }

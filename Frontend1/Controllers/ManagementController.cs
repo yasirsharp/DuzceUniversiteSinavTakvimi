@@ -1,168 +1,216 @@
-﻿using Business.Abstract;
-using Core.Entities.Concrete;
+﻿using Core.Entities.Concrete;
+using Frontend1.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend1.Controllers
 {
     public class ManagementController : Controller
     {
-        private IUserService _userService;
-        private IOperationClaimService _operationClaimService;
-        private IUserOperationClaimService _userOperationClaimService;
+        private readonly HttpService _httpService;
 
-        public ManagementController(IUserService userService, IOperationClaimService operationClaimService, IUserOperationClaimService userOperationClaimService)
+        public ManagementController(HttpService httpService)
         {
-            _userService = userService;
-            _operationClaimService = operationClaimService;
-            _userOperationClaimService = userOperationClaimService;
+            _httpService = httpService;
         }
 
-        public IActionResult User()
+        public async Task<IActionResult> User()
         {
-            ViewData["Users"] = _userService.GetAll();
-            ViewData["OperationClaims"] = _operationClaimService.GetAll();
-            ViewData["UserOperationClaims"] = _userOperationClaimService.GetAll();
+            try
+            {
+                var users = await _httpService.GetAsync<List<User>>("api/user");
+                var operationClaims = await _httpService.GetAsync<List<OperationClaim>>("api/operationclaim");
+                var userOperationClaims = await _httpService.GetAsync<List<UserOperationClaim>>("api/useroperationclaim");
 
-            return View();
+                ViewData["Users"] = users;
+                ViewData["OperationClaims"] = operationClaims;
+                ViewData["UserOperationClaims"] = userOperationClaims;
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return View();
+            }
         }
 
         [HttpGet]
         [Route("/management/operationclaim/getall")]
-        public IActionResult OperationClaimGetAll()
+        public async Task<IActionResult> OperationClaimGetAll()
         {
-            return Json(_operationClaimService.GetAll());
+            try
+            {
+                var result = await _httpService.GetAsync<List<OperationClaim>>("api/operationclaim");
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
+
         [HttpGet]
         [Route("/management/operationclaim/getbyid/{id}")]
-        public IActionResult OperationClaimGetById(int id)
+        public async Task<IActionResult> OperationClaimGetById(int id)
         {
-            return Json(_operationClaimService.GetById(id));
+            try
+            {
+                var result = await _httpService.GetAsync<OperationClaim>($"api/operationclaim/{id}");
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
+
         [HttpGet]
         [Route("/management/useroperationclaim/getall")]
-        public IActionResult UserOperationClaimAll()
+        public async Task<IActionResult> UserOperationClaimAll()
         {
-            return Json(_userOperationClaimService.GetAll());
+            try
+            {
+                var result = await _httpService.GetAsync<List<UserOperationClaim>>("api/useroperationclaim");
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
 
         [HttpGet]
         [Route("/management/user/getall")]
-        public IActionResult UserAll()
+        public async Task<IActionResult> UserAll()
         {
-            return Json(_userService.GetAll());
+            try
+            {
+                var result = await _httpService.GetAsync<List<User>>("api/user");
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
+
         [HttpGet]
         [Route("/management/user/getbyid/{id}")]
-        public IActionResult UserGetById(int id)
+        public async Task<IActionResult> UserGetById(int id)
         {
-            return Json(_userService.GetById(id));
+            try
+            {
+                var result = await _httpService.GetAsync<User>($"api/user/{id}");
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
 
         [HttpGet]
         [Route("/management/operationclaim/delete/{id}")]
-        public IActionResult OperationClaimDelete(int id)
+        public async Task<IActionResult> OperationClaimDelete(int id)
         {
-            var result = _operationClaimService.GetById(id);
-            if (result == null) return BadRequest();
-
             try
             {
-                _operationClaimService.Delete(result.Data);
+                var result = await _httpService.DeleteAsync<object>($"api/operationclaim/{id}");
+                return Ok(result);
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                return BadRequest(err.Message);
+                return BadRequest(new { message = ex.Message });
             }
-
-            return Ok();
         }
+
         [HttpPost]
         [Route("/management/operationclaim/update")]
-        public IActionResult OperationClaimDelete(OperationClaim operationClaim)
+        public async Task<IActionResult> OperationClaimUpdate(OperationClaim operationClaim)
         {
-            var result = _operationClaimService.GetById(operationClaim.Id);
-            if (result == null) return BadRequest();
-
             try
             {
-                _operationClaimService.Update(operationClaim);
+                var result = await _httpService.PutAsync<object>("api/operationclaim", operationClaim);
+                return Ok(result);
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                return BadRequest(err.Message);
+                return BadRequest(new { message = ex.Message });
             }
-
-            return Ok();
         }
+
         [HttpPost]
         [Route("/management/operationclaim/add")]
-        public IActionResult OperationClaimAdd(OperationClaim operationClaim)
+        public async Task<IActionResult> OperationClaimAdd(OperationClaim operationClaim)
         {
             try
             {
-                _operationClaimService.Add(operationClaim);
+                var result = await _httpService.PostAsync<object>("api/operationclaim", operationClaim);
+                return Ok(result);
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                return BadRequest(err.Message);
+                return BadRequest(new { message = ex.Message });
             }
-
-            return Ok();
         }
+
         [HttpPost]
         [Route("/management/useroperationclaim/add")]
-        public IActionResult UserOperationClaimAdd([FromBody] UserOperationClaim userOperationClaim)
+        public async Task<IActionResult> UserOperationClaimAdd([FromBody] UserOperationClaim userOperationClaim)
         {
             try
             {
-                var result = _userOperationClaimService.Add(userOperationClaim);
+                var result = await _httpService.PostAsync<object>("api/useroperationclaim", userOperationClaim);
                 return Ok(result);
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                return BadRequest(err.Message);
+                return BadRequest(new { message = ex.Message });
             }
-
-            return Ok();
         }
+
         [HttpGet]
         [Route("management/useroperationclaim/delete/{id}")]
-        public IActionResult DeleteUserOperationClaim(int id)
+        public async Task<IActionResult> DeleteUserOperationClaim(int id)
         {
-            var userOperationClaim = new UserOperationClaim { Id = id };
-            var result = _userOperationClaimService.Delete(userOperationClaim);
-            
-            if (result.Success)
-                return Ok(result);
-
-            return BadRequest(result.Message);
-        }
-        [HttpPost]
-        [Route("/management/useroperationclaim/update")]
-        public IActionResult UserOperationClaimDelete(UserOperationClaim userOperationClaim)
-        {
-            var result = _userOperationClaimService.GetById(userOperationClaim.Id);
-            if (result == null) return BadRequest();
-
             try
             {
-                _userOperationClaimService.Update(userOperationClaim);
+                var result = await _httpService.DeleteAsync<object>($"api/useroperationclaim/{id}");
+                return Ok(result);
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                return BadRequest(err.Message);
+                return BadRequest(new { message = ex.Message });
             }
+        }
 
-            return Ok();
+        [HttpPost]
+        [Route("/management/useroperationclaim/update")]
+        public async Task<IActionResult> UserOperationClaimUpdate(UserOperationClaim userOperationClaim)
+        {
+            try
+            {
+                var result = await _httpService.PutAsync<object>("api/useroperationclaim", userOperationClaim);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet]
         [Route("/management/user/delete/{id}")]
-        public IActionResult UserDelete(int id)
+        public async Task<IActionResult> UserDelete(int id)
         {
-            var result = _userService.Delete(new User { Id = id });
-            if (!result.Success) return BadRequest(result);
-            return Ok(result);
+            try
+            {
+                var result = await _httpService.DeleteAsync<object>($"api/user/{id}");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         public IActionResult Settings()

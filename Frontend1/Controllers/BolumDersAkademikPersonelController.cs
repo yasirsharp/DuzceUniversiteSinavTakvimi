@@ -1,79 +1,85 @@
-﻿using Business.Abstract;
-using Core.Utilities.Results;
-using Entity.Concrete;
+﻿using Entity.Concrete;
+using Frontend1.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend1.Controllers
 {
     public class BolumDersAkademikPersonelController : Controller
     {
-        IBolumService _bolumService;
-        IDersService _dersService;
-        IAkademikPersonelService _akademikPersonelService;
-        IDBAPService _dbapService;
+        private readonly HttpService _httpService;
 
-        public BolumDersAkademikPersonelController(IDBAPService dBAPService, IBolumService bolumService, IDersService dersService, IAkademikPersonelService akademikPersonelService)
+        public BolumDersAkademikPersonelController(HttpService httpService)
         {
-            _bolumService = bolumService;
-            _dersService = dersService;
-            _akademikPersonelService = akademikPersonelService;
-            _dbapService = dBAPService;
+            _httpService = httpService;
         }
-
 
         [HttpGet]
         [Route("BolumDersAkademikPersonel/index")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            ViewData["Bolumler"] = _bolumService.GetList();
-            ViewData["Dersler"] = _dersService.GetList();
-            ViewData["APler"] = _akademikPersonelService.GetList();
-            ViewData["BDAP"] = _dbapService.GetAllDetails();
+            try
+            {
+                var bolumler = await _httpService.GetAsync<List<Bolum>>("api/bolum");
+                var dersler = await _httpService.GetAsync<List<Ders>>("api/ders");
+                var akademikPersoneller = await _httpService.GetAsync<List<AkademikPersonel>>("api/akademikpersonel");
+                var dbap = await _httpService.GetAsync<List<DersBolumAkademikPersonel>>("api/bolumdersakademikpersonel");
 
-            return View();
+                ViewData["Bolumler"] = bolumler;
+                ViewData["Dersler"] = dersler;
+                ViewData["APler"] = akademikPersoneller;
+                ViewData["BDAP"] = dbap;
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return View();
+            }
         }
 
         [HttpPost]
         [Route("BolumDersAkademikPersonel/Add")]
-        public IActionResult Add([FromBody] DersBolumAkademikPersonel model)
+        public async Task<IActionResult> Add([FromBody] DersBolumAkademikPersonel model)
         {
-            var result = _dbapService.Add(model);
-            if (!result.Success)
+            try
             {
-                return BadRequest(result);
+                var result = await _httpService.PostAsync<object>("api/bolumdersakademikpersonel", model);
+                return Ok(result);
             }
-            return Ok(result);
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost]
         [Route("BolumDersAkademikPersonel/Delete")]
-        public IActionResult Delete([FromBody] DersBolumAkademikPersonel model)
+        public async Task<IActionResult> Delete([FromBody] DersBolumAkademikPersonel model)
         {
             try
             {
-                var result = _dbapService.Delete(model);
-                if (!result.Success)
-                {
-                    return BadRequest(result);
-                }
+                var result = await _httpService.DeleteAsync<object>($"api/bolumdersakademikpersonel/{model.Id}");
                 return Ok(result);
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                return BadRequest(new ErrorResult(err.Message));
+                return BadRequest(new { message = ex.Message });
             }
         }
 
         [HttpGet]
         [Route("/BolumDersAkademikPersonel/GetDetail/{id}")]
-        public IActionResult GetDetail(int id)
+        public async Task<IActionResult> GetDetail(int id)
         {
-            var result = _dbapService.GetDetail(id);
-
-            if (!result.Success) return BadRequest(result);
-
-            return Ok(result);
+            try
+            {
+                var result = await _httpService.GetAsync<object>($"api/bolumdersakademikpersonel/{id}");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
-
     }
 }
