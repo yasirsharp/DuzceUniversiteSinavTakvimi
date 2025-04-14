@@ -229,5 +229,33 @@ namespace Frontend1.Controllers
                 return Json(new { success = false, message = "Derslik bilgileri getirilirken bir hata oluştu: " + ex.Message });
             }
         }
+
+
+        [Route("/report/bolum/{bolumId}")]
+        public IActionResult Report(int bolumId)
+        {
+            if (bolumId <= 0) return Json("Geçersiz bölüm ID'si.");
+
+            try
+            {
+                var dersBolumAkademikPersonel = _dBAPService.GetByBolumId(bolumId);
+                var dersBolumAkademikPersonelDetails = _dBAPService.GetDetailsByBolumId(bolumId);
+                var derslikler = _derslikService.GetList(); ;
+                var akademikPersoneller = _akademikPersonelService.GetList();
+                var sinavDetayResult = _sinavDetayService.GetByBolumId(bolumId);
+
+                ViewData["DersBolumAkademikPersonel"] = dersBolumAkademikPersonel;
+                ViewData["DersBolumAkademikPersonelDetails"] = dersBolumAkademikPersonelDetails;
+                ViewData["Derslikler"] = derslikler;
+                ViewData["AkademikPersoneller"] = akademikPersoneller;
+                ViewData["SinavDetay"] = sinavDetayResult;
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return View("Error", ex.Message);
+            }
+        }
     }
 }

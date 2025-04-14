@@ -121,6 +121,8 @@ class SinavTakvimiManager {
             eventClick: (info) => {
                 this.handleEventClick(info);
             }
+
+
         });
 
         // Dış etkinlikleri sürüklenebilir yap
@@ -946,21 +948,121 @@ class SinavTakvimiManager {
      * Takvim verilerini PDF'e aktarır
      */
     exportToPDF() {
-        const calendarElement = document.getElementById('calendar'); // FullCalendar div'inin ID'si
-        const { jsPDF } = window.jspdf; // jsPDF kütüphanesini al
+        try {
+            // Font tanımlaması
+            pdfMake.fonts = {
+                Roboto: {
+                    normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf',
+                    bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf',
+                    italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Italic.ttf',
+                    bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-MediumItalic.ttf'
+                }
+            };
 
-        html2canvas(calendarElement, { scale: 1 }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('landscape', 'mm', 'a4');
-            const imgWidth = 297;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            // Sınav verilerini topla ve grupla
+            const sinavMap = new Map(); // Sınavları ID'lerine göre gruplamak için
+            const events = calendar.getEvents();
 
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save('takvim.pdf');
-        });
-        // Butona bağlamak için:
-        //document.getElementById('exportPDF').addEventListener('click', exportCalendarToPDF);
+            // Önce tüm sınavları topla
+            events.forEach(event => {
+                const props = event.extendedProps;
+                const derslik = this.dersliklerData.find(d => d.id === props.derslikId);
+                const gozetmen = this.akademikPersonellerData.find(ap => ap.id === props.gozetmenId);
 
+                const derslikBilgisi = derslik ? 
+                    `${derslik.ad}\n(${gozetmen ? `${gozetmen.unvan} ${gozetmen.ad}` : 'Gözetmen Atanmamış'})` : 
+                    'Derslik Atanmamış';
+
+                // Sınavı haritaya ekle
+                sinavMap.set(event.id, {
+                    dersAdi: props.dersAd,
+                    ogretimUyesi: `${props.unvan} ${props.akademikPersonelAd}`,
+                    sinavTarihi: event.start.toLocaleDateString('tr-TR'),
+                    saatAraligi: `${event.start.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} - ${event.end.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`,
+                    derslikBilgisi: derslikBilgisi
+                });
+            });
+
+            // Tabloyu oluştur
+            const tableData = Array.from(sinavMap.values()).map(sinav => [
+                { text: sinav.dersAdi },
+                { text: sinav.ogretimUyesi },
+                { text: sinav.sinavTarihi },
+                { text: sinav.saatAraligi },
+                { text: sinav.derslikBilgisi }
+            ]);
+
+            const headerRow = [
+                { text: 'Ders Adı', style: 'tableHeader' },
+                { text: 'Öğretim Üyesi', style: 'tableHeader' },
+                { text: 'Sınav Tarihi', style: 'tableHeader' },
+                { text: 'Saat Aralığı', style: 'tableHeader' },
+                { text: 'Derslik ve Gözetmen', style: 'tableHeader' }
+            ];
+
+            const docDefinition = {
+                pageOrientation: 'landscape',
+                pageMargins: [20, 60, 20, 40],
+                header: {
+                    columns: [
+                        {
+                            text: 'SINAV TAKVİMİ',
+                            alignment: 'left',
+                            margin: [20, 20, 0, 0],
+                            fontSize: 18,
+                            bold: true
+                        },
+                        {
+                            text: `Oluşturma Tarihi: ${new Date().toLocaleDateString('tr-TR')}`,
+                            alignment: 'right',
+                            margin: [0, 25, 20, 0],
+                            fontSize: 10
+                        }
+                    ]
+                },
+                footer: function(currentPage, pageCount) {
+                    return {
+                        text: `Sayfa ${currentPage} / ${pageCount}`,
+                        alignment: 'right',
+                        margin: [0, 0, 20, 20]
+                    };
+                },
+                content: [
+                    {
+                        table: {
+                            headerRows: 1,
+                            widths: ['*', '*', 'auto', 'auto', '*'],
+                            body: [headerRow, ...tableData]
+                        }
+                    }
+                ],
+                styles: {
+                    tableHeader: {
+                        bold: true,
+                        fontSize: 11,
+                        color: 'white',
+                        fillColor: '#337ab7',
+                        alignment: 'center'
+                    }
+                },
+                defaultStyle: {
+                    font: 'Roboto',
+                    fontSize: 10
+                }
+            };
+
+            // PDF oluştur ve indir
+            const fileName = `Sinav_Takvimi_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.pdf`;
+            pdfMake.createPdf(docDefinition).download(fileName);
+
+        } catch (error) {
+            console.error('PDF oluşturma hatası:', error);
+            Swal.fire({
+                title: 'Hata!',
+                text: 'PDF oluşturulurken bir hata oluştu.',
+                icon: 'error'
+            });
+        }
     }
 
     /**
