@@ -1,77 +1,60 @@
-﻿using Entity.Concrete;
-using Frontend1.Services;
+﻿using Business.Abstract;
+using Business.Concrete;
+using DataAccess.Concrete;
+using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Frontend1.Controllers
 {
     public class AkademikPersonelController : Controller
     {
-        private readonly HttpService _httpService;
+        IAkademikPersonelService _akademikPersonelService;
 
-        public AkademikPersonelController(HttpService httpService)
+        public AkademikPersonelController(IAkademikPersonelService akademikPersonelService)
         {
-            _httpService = httpService;
+            _akademikPersonelService = akademikPersonelService;
         }
 
         [HttpGet]
         [Route("AkademikPersonel/index")]
         [Route("AkademikPersonel/Yonetim")]
         [Route("AkademikPersonel/AkademikPersonelYonetim")]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            try
-            {
-                var akademikPersoneller = await _httpService.GetAsync<List<AkademikPersonel>>("api/akademikpersonel");
-                return View(akademikPersoneller);
-            }
-            catch (Exception ex)
-            {
-                return View(new List<AkademikPersonel>());
-            }
+            return View(_akademikPersonelService.GetList().Data);
         }
-
         [HttpPost]
         [Route("/AkademikPersonel/Add")]
         public async Task<IActionResult> Add([FromBody] AkademikPersonel akademikPersonel)
         {
-            try
-            {
-                var result = await _httpService.PostAsync<object>("api/akademikpersonel", akademikPersonel);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = _akademikPersonelService.Add(akademikPersonel);
+            if (result.Success) return Ok(result);
+
+            return BadRequest(new { message = result.Message });
         }
+
+
 
         [HttpPost]
         [Route("/AkademikPersonel/Delete")]
-        public async Task<IActionResult> Delete([FromBody] AkademikPersonel akademikPersonel)
+        public IActionResult Delete([FromBody] AkademikPersonel akademikPersonel)
         {
-            try
-            {
-                var result = await _httpService.DeleteAsync<object>($"api/akademikpersonel/{akademikPersonel.Id}");
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
+            var result = _akademikPersonelService.Delete(akademikPersonel);
+            if (result.Success) 
+                return Ok(new { success = true, message = result.Message });
 
+            return BadRequest(new { success = false, message = result.Message });
+        }
         [HttpPost]
-        public async Task<IActionResult> Update([FromBody] AkademikPersonel akademikPersonel)
+        public IActionResult Update([FromBody] AkademikPersonel akademikPersonel)
         {
-            try
+            var result = _akademikPersonelService.Update(akademikPersonel);
+            if (!result.Success)
             {
-                var result = await _httpService.PutAsync<object>("api/akademikpersonel", akademikPersonel);
-                return Ok(result);
+                return BadRequest(new { message = result.Message });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return Ok();
         }
     }
 }

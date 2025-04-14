@@ -1,99 +1,71 @@
-﻿using Entity.Concrete;
-using Frontend1.Services;
+﻿using Business.Abstract;
+using Business.Concrete;
+using DataAccess.Concrete;
+using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend1.Controllers
 {
     public class DersController : Controller
     {
-        private readonly HttpService _httpService;
+        IDersService _dersService;
 
-        public DersController(HttpService httpService)
+        public DersController(IDersService dersService)
         {
-            _httpService = httpService;
+            _dersService = dersService;
         }
 
         [HttpGet]
         [Route("Ders/index")]
         [Route("Ders/Yonetim")]
         [Route("Ders/DersYonetim")]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            try
-            {
-                var dersler = await _httpService.GetAsync<List<Ders>>("api/ders");
-                return View(dersler);
-            }
-            catch (Exception ex)
-            {
-                return View(new List<Ders>());
-            }
+            return View(_dersService.GetList().Data);
         }
-
         [HttpPost]
         [Route("/Ders/Add")]
-        public async Task<IActionResult> Add([FromBody] Ders ders)
+        public IActionResult Add([FromBody] Ders ders)
         {
-            try
-            {
-                var result = await _httpService.PostAsync<object>("api/ders", ders);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = _dersService.Add(ders);
+            if(result.Success) return Ok();
+
+            return BadRequest(new { message = result.Message });
         }
 
+
+
         [HttpPost]
-        public async Task<IActionResult> Delete([FromBody] Ders ders)
+        public IActionResult Delete([FromBody] Ders ders)
         {
-            try
-            {
-                var result = await _httpService.DeleteAsync<object>($"api/ders/{ders.Id}");
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = _dersService.Delete(ders);
+            if (result.Success) return Ok();
+
+            return BadRequest(new { message = result.Message });
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetById(int id)
+        public IActionResult GetById(int id)
         {
-            try
+            var ders = _dersService.GetById(id);
+            if (ders.Data != null)
             {
-                var ders = await _httpService.GetAsync<Ders>($"api/ders/{id}");
-                if (ders != null)
-                {
-                    return Ok(ders);
-                }
-                return NotFound();
+                return Ok(ders.Data); // Ders nesnesini JSON olarak döner
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return NotFound();
         }
-
         [HttpPost]
-        public async Task<IActionResult> Update([FromBody] Ders ders)
+        public IActionResult Update([FromBody] Ders ders)
         {
-            try
+            if (ders == null)
             {
-                if (ders == null)
-                {
-                    return BadRequest(new { message = "Ders verisi eksik veya geçersiz." });
-                }
+                return BadRequest("Ders verisi eksik veya geçersiz.");
+            }
 
-                var result = await _httpService.PutAsync<object>("api/ders", ders);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = _dersService.Update(ders);
+            if (result.Success) return Ok();
+
+            return BadRequest(new { message = result.Message });
         }
     }
 }

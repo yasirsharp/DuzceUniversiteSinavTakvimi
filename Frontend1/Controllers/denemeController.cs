@@ -1,30 +1,22 @@
-﻿using Entity.Concrete;
-using Frontend1.Services;
+﻿using Business.Abstract;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend1.Controllers
 {
     public class denemeController : Controller
     {
-        private readonly HttpService _httpService;
+        private readonly ISinavDetayService _sinavDetayService;
+        private readonly IDBAPService _dBAPService;
 
-        public denemeController(HttpService httpService)
+        public denemeController(ISinavDetayService sinavDetayService, IDBAPService dBAPService)
         {
-            _httpService = httpService;
+            _sinavDetayService = sinavDetayService;
+            _dBAPService = dBAPService;
         }
-
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            try
-            {
-                var sinavDetaylar = await _httpService.GetAsync<List<SinavDetay>>("api/sinavdetay");
-                ViewData["SinavDetaylar"] = sinavDetaylar;
-                return View();
-            }
-            catch (Exception ex)
-            {
-                return View();
-            }
+            ViewData["SinavDetaylar"] = _sinavDetayService.GetAll().Data;
+            return View();
         }
     }
 }

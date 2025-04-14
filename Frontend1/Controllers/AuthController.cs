@@ -1,92 +1,33 @@
-﻿using Entity.DTOs;
-using Frontend1.Services;
+﻿using Business.Abstract;
+using Entity.DTOs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text.Json;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace Frontend1.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly HttpService _httpService;
+        private readonly IAuthService _authService;
+        private readonly IUserService _userService;
 
-        public AuthController(HttpService httpService)
+        public AuthController(IAuthService authService, IUserService userService)
         {
-            _httpService = httpService;
-        }
-
-        private void SetUserCookies(string token)
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-            var claims = jwtToken.Claims;
-
-            // Token'ı cookie'ye kaydet
-            Response.Cookies.Append("AuthToken", token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.Now.AddMinutes(120)
-            });
-
-            // Kullanıcı bilgilerini cookie'lere kaydet
-            Response.Cookies.Append("UserInfo-Id", 
-                claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value ?? "",
-                new CookieOptions
-                {
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.Now.AddMinutes(120)
-                });
-
-            Response.Cookies.Append("UserInfo-FullName", 
-                claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value ?? "",
-                new CookieOptions
-                {
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.Now.AddMinutes(120)
-                });
-
-            Response.Cookies.Append("UserInfo-Email", 
-                claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "",
-                new CookieOptions
-                {
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.Now.AddMinutes(120)
-                });
-
-            Response.Cookies.Append("UserInfo-Role", 
-                claims.FirstOrDefault(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value ?? "",
-                new CookieOptions
-                {
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.Now.AddMinutes(120)
-                });
-
-            // Bölüm ID'lerini cookie'lere kaydet
-            for (int i = 1; i <= 3; i++)
-            {
-                var bolumId = claims.FirstOrDefault(c => c.Type == $"{i}.BolumId")?.Value;
-                if (!string.IsNullOrEmpty(bolumId))
-                {
-                    Response.Cookies.Append($"UserInfo-BolumId-{i}", bolumId, new CookieOptions
-                    {
-                        SameSite = SameSiteMode.Strict,
-                        Expires = DateTime.Now.AddMinutes(120)
-                    });
-                }
-            }
+            _authService = authService;
+            _userService = userService;
         }
 
         [HttpGet]
         public IActionResult Login()
         {
-            if (Request.Cookies.ContainsKey("AuthToken"))
+            foreach (var item in Request.Cookies)
             {
-                return RedirectToAction("Index", "Home");
+                if (item.Key == "AuthToken")
+                {
+                    return RedirectToAction("Index", "Home");
+                }
             }
             return View();
         }
@@ -96,24 +37,82 @@ namespace Frontend1.Controllers
         {
             try
             {
-                var response = await _httpService.PostAsync<object>("api/auth/login", userForLoginDto);
-                var result = JsonSerializer.Deserialize<JsonElement>(response.ToString());
-                
-                var token = result.GetProperty("token").GetString();
-                SetUserCookies(token);
+                var userToLogin = _authService.Login(userForLoginDto);
+                if (!userToLogin.Success)
+                {
+                    return BadRequest(userToLogin.Message);
+                }
+
+                var result = _authService.CreateAccessToken(userToLogin.Data);
+                if (!result.Success)
+                {
+                    return BadRequest(result.Message);
+                }
+
+                // Token ve kullanıcı bilgilerini cookie olarak kaydet
+                Response.Cookies.Append("AuthToken", result.Data.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+
+                string claims = "";
+                var userClaims = _userService.GetClaims(userToLogin.Data);
+                if (userClaims.Success)
+                {
+                    foreach (var claim in userClaims.Data)
+                    {
+                        claims += $"{claim.Id}:{claim.Name};";
+                    }
+                }
+                Response.Cookies.Append("UserInfo-Id", userToLogin.Data.Id.ToString(), new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("UserInfo-FullName", $"{userToLogin.Data.FirstName} {userToLogin.Data.LastName}", new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("UserInfo-Email", userToLogin.Data.EMail, new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("UserInfo-Status", userToLogin.Data.Status.ToString(), new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("User-Claims", claims, new CookieOptions
+                {
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
 
                 return Ok(new { message = "Giriş başarılı!" });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest($"Bir hata oluştu: {ex.Message}");
             }
         }
 
         [HttpGet]
         public IActionResult Register()
         {
-            if (Request.Cookies.ContainsKey("AuthToken"))
+            if (User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -125,17 +124,81 @@ namespace Frontend1.Controllers
         {
             try
             {
-                var response = await _httpService.PostAsync<object>("api/auth/register", userForRegisterDto);
-                var result = JsonSerializer.Deserialize<JsonElement>(response.ToString());
+                var userExists = _authService.UserExists(userForRegisterDto.Email);
+                if (!userExists.Success)
+                {
+                    return BadRequest(userExists.Message);
+                }
 
-                var token = result.GetProperty("token").GetString();
-                SetUserCookies(token);
+                var registerResult = _authService.Register(userForRegisterDto, userForRegisterDto.Password);
+                if (!registerResult.Success)
+                {
+                    return BadRequest(registerResult.Message);
+                }
+
+                var result = _authService.CreateAccessToken(registerResult.Data);
+                if (!result.Success)
+                {
+                    return BadRequest(result.Message);
+                }
+
+                string claims = "";
+                var userClaims = _userService.GetClaims(registerResult.Data);
+                if (userClaims.Success)
+                {
+                    foreach (var claim in userClaims.Data)
+                    {
+                        claims += $"{claim.Id}:{claim.Name};";
+                    }
+                }
+                Response.Cookies.Append("AuthToken", result.Data.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("UserInfo-Id", registerResult.Data.Id.ToString(), new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("UserInfo-FullName", $"{registerResult.Data.FirstName} {registerResult.Data.LastName}", new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("UserInfo-Email", registerResult.Data.EMail, new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("UserInfo-Status", registerResult.Data.Status.ToString(), new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
+                Response.Cookies.Append("User-Claims", claims, new CookieOptions
+                {
+                    
+                    
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.Now.AddMinutes(120)
+                });
 
                 return Ok(new { message = "Kayıt başarılı!" });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest($"Bir hata oluştu: {ex.Message}");
             }
         }
 
@@ -144,19 +207,20 @@ namespace Frontend1.Controllers
         {
             try
             {
-                await _httpService.PostAsync<object>("api/auth/logout", null);
-                
                 // Tüm cookie'leri sil
                 foreach (var cookie in Request.Cookies.Keys)
                 {
                     Response.Cookies.Delete(cookie);
                 }
 
+                // Oturumu sonlandır
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
                 return Ok(new { message = "Çıkış başarılı!" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                return StatusCode(500, "Çıkış yapılırken bir hata oluştu: " + ex.Message);
             }
         }
 

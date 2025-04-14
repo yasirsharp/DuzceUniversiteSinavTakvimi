@@ -1,5 +1,5 @@
+using Business.Abstract;
 using Core.Entities.Concrete;
-using Frontend1.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,67 +10,61 @@ namespace Frontend1.Controllers
     [Authorize(Roles = "super.admin")]
     public class OperationClaimsController : ControllerBase
     {
-        private readonly HttpService _httpService;
+        private readonly IOperationClaimService _operationClaimService;
 
-        public OperationClaimsController(HttpService httpService)
+        public OperationClaimsController(IOperationClaimService operationClaimService)
         {
-            _httpService = httpService;
+            _operationClaimService = operationClaimService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public IActionResult GetAll()
         {
-            try
+            var result = _operationClaimService.GetAll();
+            if (result.Success)
             {
-                var result = await _httpService.GetAsync<List<OperationClaim>>("api/operationclaim");
                 return Ok(result);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return BadRequest(result.Message);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        public IActionResult GetById(int id)
         {
-            try
+            var result = _operationClaimService.GetById(id);
+            if (result.Success)
             {
-                var result = await _httpService.GetAsync<OperationClaim>($"api/operationclaim/{id}");
                 return Ok(result);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return BadRequest(result.Message);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Add([FromBody] OperationClaim operationClaim)
+        public IActionResult Add([FromBody] OperationClaim operationClaim)
         {
-            try
+            var result = _operationClaimService.Add(operationClaim);
+            if (result.Success)
             {
-                var result = await _httpService.PostAsync<object>("api/operationclaim", operationClaim);
                 return Ok(result);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return BadRequest(result.Message);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public IActionResult Delete(int id)
         {
-            try
+            var operationClaim = _operationClaimService.GetById(id).Data;
+            if (operationClaim == null)
             {
-                var result = await _httpService.DeleteAsync<object>($"api/operationclaim/{id}");
+                return NotFound("Yetki bulunamadı.");
+            }
+
+            var result = _operationClaimService.Delete(operationClaim);
+            if (result.Success)
+            {
                 return Ok(result);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return BadRequest(result.Message);
         }
     }
 } 

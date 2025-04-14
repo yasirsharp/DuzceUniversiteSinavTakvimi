@@ -19,127 +19,93 @@
 }
 
 @section Styles {
-    <!-- Bryntum Calendar CSS -->
-    <link rel="stylesheet" href="https://bryntum.com/products/calendar/build/calendar.material.css" data-bryntum-theme>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #34495e;
-            --accent-color: #3498db;
-            --success-color: #2ecc71;
-            --warning-color: #f1c40f;
-            --danger-color: #e74c3c;
-            --light-bg: #f8f9fa;
-            --dark-bg: #2c3e50;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        body {
-            background-color: var(--light-bg);
-        }
-
-        .main-container {
-            padding: 2rem;
-            max-width: 1800px;
-            margin: 0 auto;
-        }
-
         .calendar-container {
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            height: calc(100vh - 140px);
-            overflow: hidden;
-        }
-
-        .sidebar-container {
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            height: calc(100vh - 140px);
+            height: calc(100vh - 100px);
             overflow: hidden;
         }
 
         .sticky-sidebar {
             position: sticky;
             top: 20px;
-            max-height: calc(100vh - 160px);
+            max-height: calc(100vh - 120px);
             overflow-y: auto;
-            padding: 1rem;
         }
 
-        .card {
-            border: none;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
+        .fc {
+            height: 100% !important;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
         }
 
-        .card-header {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
-            padding: 1rem;
+        .fc-timegrid-slot {
+            height: 50px !important;
         }
 
-        .card-header h3 {
-            margin: 0;
+        .fc-timegrid-slot-lane {
+            border-bottom: 1px solid #ddd !important;
+        }
+
+        .fc-timegrid-slots td {
+            height: 50px !important;
+            border-bottom: 1px solid #ddd !important;
+        }
+
+        .fc-col-header-cell {
+            background-color: #f8f9fa;
+            padding: 8px !important;
+        }
+
+        .fc-timegrid-axis {
+            padding: 10px !important;
+        }
+
+        .fc-button-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .fc-event {
+            margin: 2px;
+            padding: 3px;
+        }
+
+        .fc-toolbar-chunk {
+            display: flex;
+            gap: 5px;
+        }
+
+        .fc .fc-toolbar {
+            padding: 10px;
+        }
+
+        .fc .fc-toolbar-title {
             font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 1.5rem;
+            margin: 0;
         }
 
         .external-event {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: var(--border-radius);
-            cursor: grab;
-            transition: all 0.3s ease;
-            box-shadow: var(--box-shadow);
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            touch-action: none;
-        }
-
-        .external-event.dragging {
-            opacity: 0.5;
-            transform: scale(0.95);
-        }
-
-        .external-event:active {
-            cursor: grabbing;
-        }
-
-        .external-event:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .external-event h5 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .external-event p {
-            margin: 0;
-            font-size: 0.9rem;
-            opacity: 0.9;
+            box-shadow: 0 0 1px rgba(0, 0, 0, 0.125), 0 1px 3px rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            cursor: move;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            color: #fff;
         }
 
         .bolum-baslik {
-            background: var(--secondary-color);
-            color: white;
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 10px;
+            margin: 15px 0 0 0;
+            border-left: 4px solid #2c3e50;
+            background-color: #f8f9fa;
+            border-radius: 0 4px 4px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -148,39 +114,39 @@
         }
 
         .bolum-baslik:hover {
-            background: var(--primary-color);
+            background-color: #e9ecef;
+            /* transform: translateX(5px); */
         }
 
-        .bolum-baslik i {
-            transition: transform 0.3s ease;
+        .bolum-baslik i.toggle-icon {
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            font-size: 1.1rem;
         }
 
-        .bolum-baslik.collapsed i {
+        .bolum-baslik.collapsed i.toggle-icon {
             transform: rotate(-180deg);
         }
 
-        .select2-container--default .select2-selection--multiple {
-            border-radius: var(--border-radius);
-            border: 1px solid #ced4da;
-            padding: 0.375rem;
+        .bolum-dersler {
+            max-height: 1000px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform-origin: top;
+            transform: scaleY(1);
+            margin-top: 10px;
         }
 
-        .select2-container--default .select2-selection--multiple .select2-selection__choice {
-            background-color: var(--accent-color);
-            border: none;
-            color: white;
-            border-radius: 4px;
-            padding: 2px 8px;
+        .bolum-dersler.collapsed {
+            max-height: 0;
+            opacity: 0;
+            transform: scaleY(0);
+            margin-top: 0;
         }
 
-        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-            color: white;
-            margin-right: 5px;
-        }
-
-        /* Animasyonlar */
         .external-event {
-            animation: slideIn 0.3s ease-out;
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            animation: slideIn 0.3s ease forwards;
         }
 
         @@keyframes slideIn {
@@ -194,167 +160,139 @@
             }
         }
 
-        /* Özel scrollbar */
-        .sticky-sidebar::-webkit-scrollbar {
-            width: 8px;
+        .bolum-grup {
+            margin-bottom: 20px;
         }
 
-        .sticky-sidebar::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .bolum-grup:first-child .bolum-baslik {
+            margin-top: 0;
+        }
+
+        .export-button {
+            margin-left: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 15px;
             border-radius: 4px;
+            cursor: pointer;
         }
-
-        .sticky-sidebar::-webkit-scrollbar-thumb {
-            background: var(--secondary-color);
-            border-radius: 4px;
-        }
-
-        .sticky-sidebar::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-color);
-        }
-
-        /* Derslik seçimi için özel stil */
-        .derslik-filter-container {
-            margin-bottom: 1.5rem;
-        }
-
-        .derslik-filter-container label {
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-
-        /* Takvim container için özel stil */
-        .calendar-wrapper {
-            padding: 1rem;
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            height: calc(100vh - 140px);
-            display: flex;
-            flex-direction: column;
-        }
-
-        #calendar {
-            flex: 1;
-            min-height: 0;
-            height: 100%;
-            overflow: auto;
-            position: relative;
-        }
-
-        #calendar::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            background: rgba(255, 255, 255, 0.1);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        #calendar.drag-over::before {
-            opacity: 1;
-        }
-
-        .b-calendar {
-            height: 100% !important;
-        }
-
-        .b-calendar .b-calendar-body {
-            height: 100% !important;
+        .export-button:hover {
+            background-color: #218838;
         }
     </style>
 }
 
-<div class="main-container">
+<div class="container-fluid mt-4">
     @Html.AntiForgeryToken()
-    <div class="row g-4">
+    <div class="row">
         <div class="col-md-3">
-            <div class="sidebar-container">
-                <div class="sticky-sidebar">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="bi bi-calendar-event me-2"></i>
-                                Sürüklenebilir Dersler
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="derslik-filter-container">
-                                <label>
-                                    <i class="bi bi-building me-2"></i>
-                                    Derslik Seçimi
-                                </label>
-                                <select id="mainDerslikFilter" class="form-control js-example-basic-multiple">
-                                    @foreach (var derslik in derslikler.Data)
-                                    {
-                                        <option value="@derslik.Id">@derslik.Ad (@derslik.Kapasite)</option>
-                                    }
-                                </select>
-                            </div>
-                            
-                            <div id="external-events">
-                                @{
-                                    var gruplanmisDersler = dbap_detail.Data
-                                        .GroupBy(x => x.BolumId)
-                                        .Select(g => new
-                                        {
-                                            BolumId = g.Key,
-                                            BolumAd = g.First().BolumAd,
-                                            Dersler = g.GroupBy(d => d.Id)
-                                                      .Select(d => d.First())
-                                                      .OrderBy(d => d.DersAd)
-                                        })
-                                        .OrderBy(x => x.BolumAd);
-                                }
-                                
-                                @foreach (var bolum in gruplanmisDersler)
+            <div class="sticky-sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Sürüklenebilir Dersler</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Sol taraftaki derslik seçimi -->
+                        <div class="form-group mb-3">
+                            <label>Derslik Seçimi</label>
+                            <select id="mainDerslikFilter" class="form-control js-example-basic-multiple">
+                                @foreach (var derslik in derslikler.Data)
                                 {
-                                    <div class="bolum-grup">
-                                        <div class="bolum-baslik" onclick="toggleDersler(this)">
-                                            <span>
-                                                <i class="bi bi-building me-2"></i>@bolum.BolumAd
-                                            </span>
-                                            <i class="bi bi-chevron-down"></i>
-                                        </div>
-                                        <div class="bolum-dersler" id="sinav-source">
-                                            @foreach (var ders in bolum.Dersler)
-                                            {
-                                                <div class="external-event fc-event" 
-                                                     data-id="@ders.Id" 
-                                                     data-ders-id="@ders.DersId"
-                                                     data-bolum-id="@ders.BolumId"
-                                                     draggable="true">
-                                                    <h5>@ders.DersAd</h5>
-                                                    <p>@ders.AkademikPersonelAd</p>
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
+                                    <option value="@derslik.Id">@derslik.Ad (@derslik.Kapasite)</option>
                                 }
-                            </div>
+                            </select>
+                        </div>
+                        
+                        <!-- Sürüklenebilir Etkinlikler -->
+                        <div id="external-events">
+                            @{
+                                var gruplanmisDersler = dbap_detail.Data
+                                    .GroupBy(x => x.BolumId)
+                                    .Select(g => new
+                                    {
+                                        BolumId = g.Key,
+                                        BolumAd = g.First().BolumAd,
+                                        Dersler = g.GroupBy(d => d.Id)
+                                                  .Select(d => d.First())
+                                                  .OrderBy(d => d.DersAd)
+                                    })
+                                    .OrderBy(x => x.BolumAd);
+                            }
+                            
+                            @foreach (var bolum in gruplanmisDersler)
+                            {
+                                <div class="bolum-grup">
+                                    <div class="bolum-baslik" onclick="toggleDersler(this)">
+                                        <span>
+                                            <i class="bi bi-building me-2"></i>@bolum.BolumAd
+                                        </span>
+                                        <i class="bi bi-chevron-down toggle-icon"></i>
+                                    </div>
+                                    <div class="bolum-dersler">
+                                        @foreach (var ders in bolum.Dersler)
+                                        {
+                                            <div class="external-event" 
+                                                 data-id="@ders.Id" 
+                                                 data-ders-id="@ders.DersId"
+                                                 data-bolum-id="@ders.BolumId">
+                                                <h5>@ders.DersAd</h5>
+                                                <p>@ders.AkademikPersonelAd</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-9">
-            <div class="calendar-wrapper">
-                <div id="calendar"></div>
+            <div class="card card-primary calendar-container">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <!-- Buradan derslik filtresini kaldırıyoruz -->
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="calendar"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Debug bilgisi -->
+<div class="d-none">
+    <h4>Orijinal Veri:</h4>
+    @foreach(var item in dbap_detail.Data)
+    {
+        <p>Id: @item.Id, DersId: @item.DersId, Ders: @item.DersAd, Bolum: @item.BolumAd</p>
+    }
+    
+    <h4>Gruplanmış Veri:</h4>
+    @foreach(var bolum in gruplanmisDersler)
+    {
+        <h5>@bolum.BolumAd</h5>
+        @foreach(var ders in bolum.Dersler)
+        {
+            <p>Id: @ders.Id, DersId: @ders.DersId, Ders: @ders.DersAd</p>
+        }
+    }
+</div>
+
 @section Scripts {
-    <!-- Bryntum Calendar -->
-    <script src="https://bryntum.com/products/calendar/build/calendar.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- jQuery UI -->
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <!-- Select2 -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- FullCalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/tr.js'></script>
     <!-- SheetJS -->
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
 
@@ -364,15 +302,59 @@
             derslikler: @Html.Raw(Json.Serialize(derslikler.Data)),
             dbapDetail: @Html.Raw(Json.Serialize(dbap_detail.Data)),
             sinavlar: @Html.Raw(Json.Serialize(sinavs.Data)),
-            akademikPersoneller: @Html.Raw(Json.Serialize(ViewData["AkademikPersoneller"])),
-            bolumId: @Html.Raw(Json.Serialize(ViewData["BolumID"]))
+            akademikPersoneller: @Html.Raw(Json.Serialize(ViewData["AkademikPersoneller"]))
         };
 
-        // Bölüm açma/kapama fonksiyonu
+        // Renk üretimi için yardımcı fonksiyonlar
+        const generateBolumColor = (bolumId) => {
+            const GOLDEN_RATIO = 0.618033988749895;
+            const hue = (bolumId * GOLDEN_RATIO * 360) % 360;
+            return `hsl(${hue}, 60%, 45%)`;
+        };
+
+        // Sayfa yüklendiğinde bölüm renklerini uygula
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.external-event').forEach(event => {
+                const bolumId = event.dataset.bolumId;
+                event.style.backgroundColor = generateBolumColor(bolumId);
+            });
+
+            // İlk bölümü açık bırak, diğerlerini kapat
+            const bolumGruplar = document.querySelectorAll('.bolum-grup');
+            bolumGruplar.forEach((grup, index) => {
+                if (index !== 0) {
+                    const baslik = grup.querySelector('.bolum-baslik');
+                    const dersler = grup.querySelector('.bolum-dersler');
+                    baslik.classList.add('collapsed');
+                    dersler.classList.add('collapsed');
+                }
+            });
+        });
+
         function toggleDersler(element) {
             const derslerDiv = element.nextElementSibling;
+            const icon = element.querySelector('.toggle-icon');
+            const isCollapsed = element.classList.contains('collapsed');
+            
+            // Toggle sınıfları
             element.classList.toggle('collapsed');
-            derslerDiv.style.display = derslerDiv.style.display === 'none' ? 'block' : 'none';
+            derslerDiv.classList.toggle('collapsed');
+
+            // Dersler açılırken animasyon ekle
+            if (!isCollapsed) {
+                // Kapanırken
+                derslerDiv.style.overflow = 'hidden';
+            } else {
+                // Açılırken
+                setTimeout(() => {
+                    derslerDiv.style.overflow = 'visible';
+                    // Her derse sırayla animasyon ekle
+                    const dersler = derslerDiv.querySelectorAll('.external-event');
+                    dersler.forEach((ders, index) => {
+                        ders.style.animationDelay = `${index * 0.1}s`;
+                    });
+                }, 50);
+            }
         }
     </script>
 

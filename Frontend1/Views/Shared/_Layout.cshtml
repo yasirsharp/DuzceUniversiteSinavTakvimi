@@ -305,7 +305,7 @@
         }
 
         function getUserInfo() {
-            const userClaims = getCookie('UserInfo-Role');
+            const userClaims = getCookie('User-Claims');
             const fullName = getCookie('UserInfo-FullName') || 'Kullanıcı';
 
             if (!userClaims) {
@@ -337,11 +337,7 @@
                 userNameElement.textContent = getUserInfo();
             }
         });
-    </script><!-- _Layout.cshtml içinde -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    </script>
 
     <!-- Footer başlangıç -->
     @* <footer class="footer">

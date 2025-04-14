@@ -4,193 +4,229 @@ using Entity.Concrete;
 using Core.Utilities.Results;
 using Entity.DTOs;
 using System.Linq;
-using Frontend1.Services;
 
 namespace Frontend1.Controllers
 {
+
     public class SinavDetayController : Controller
     {
-        private readonly HttpService _httpService;
+        private readonly ISinavDetayService _sinavDetayService;
+        private readonly IDBAPService _dBAPService;
+        private readonly IDerslikService _derslikService;
+        private readonly ISinavDerslikService _sinavDerslikService;
+        private readonly IAkademikPersonelService _akademikPersonelService;
 
-        public SinavDetayController(HttpService httpService)
+
+        public SinavDetayController(
+            ISinavDetayService sinavDetayService, 
+            IDBAPService dBAPService, 
+            IDerslikService derslikService,
+            ISinavDerslikService sinavDerslikService,
+            IAkademikPersonelService akademikPersonelService)
         {
-            _httpService = httpService;
+            _sinavDetayService = sinavDetayService;
+            _dBAPService = dBAPService;
+            _derslikService = derslikService;
+            _sinavDerslikService = sinavDerslikService;
+            _akademikPersonelService = akademikPersonelService;
         }
 
-        public async Task<IActionResult> Index()
+        // Tüm sınav detaylarını listeleyen action
+        public IActionResult Index()
         {
-            try
+            ViewData["DBAP"] = _dBAPService.GetAll();
+            ViewData["DBAPDetail"] = _dBAPService.GetAllDetails();
+            ViewData["Derslikler"] = _derslikService.GetList();
+            ViewData["AkademikPersoneller"] = _akademikPersonelService.GetList();
+            
+            var sinavDetayResult = _sinavDetayService.GetAllDetails();
+            
+            ViewData["SinavDetay"] = sinavDetayResult;
+            
+            if (sinavDetayResult.Success)
             {
-                var dbap = await _httpService.GetAsync<List<DersBolumAkademikPersonel>>("api/bolumdersakademikpersonel");
-                var dbapDetail = await _httpService.GetAsync<List<DersBolumAkademikPersonel>>("api/bolumdersakademikpersonel/details");
-                var derslikler = await _httpService.GetAsync<List<Derslik>>("api/derslik");
-                var akademikPersoneller = await _httpService.GetAsync<List<AkademikPersonel>>("api/akademikpersonel");
-                var sinavDetayResult = await _httpService.GetAsync<List<SinavDetay>>("api/sinavdetay/details");
-
-                ViewData["DBAP"] = dbap;
-                ViewData["DBAPDetail"] = dbapDetail;
-                ViewData["Derslikler"] = derslikler;
-                ViewData["AkademikPersoneller"] = akademikPersoneller;
-                ViewData["SinavDetay"] = sinavDetayResult;
-
-                return View();
+                return View(sinavDetayResult);
             }
-            catch (Exception ex)
-            {
-                return View("Error", ex.Message);
-            }
+            return View("Error", sinavDetayResult.Message);
         }
 
         [Route("/sinavdetay/{bolumId}")]
-        public async Task<IActionResult> Index(int bolumId)
+        public IActionResult Index(int bolumId)
         {
-            if (bolumId <= 0) return Json("Geçersiz bölüm ID'si.");
+            if (bolumId <= 0) return Json("Düzgün Veri girerseniz çok sevinirim. isterseniz düzgün veri nasıl girdirilir gösterebilirim. Hem de uygulamalı.");
 
-            try
-            {
-                var dersBolumAkademikPersonel = await _httpService.GetAsync<List<DersBolumAkademikPersonel>>($"api/bolumdersakademikpersonel/bolum/{bolumId}");
-                var dersBolumAkademikPersonelDetails = await _httpService.GetAsync<List<DersBolumAkademikPersonel>>($"api/bolumdersakademikpersonel/bolum/{bolumId}/details");
-                var derslikler = await _httpService.GetAsync<List<Derslik>>("api/derslik");
-                var akademikPersoneller = await _httpService.GetAsync<List<AkademikPersonel>>("api/akademikpersonel");
-                var sinavDetayResult = await _httpService.GetAsync<List<SinavDetay>>($"api/sinavdetay/bolum/{bolumId}");
+            ViewData["DersBolumAkademikPersonel"] = _dBAPService.GetByBolumId(bolumId);
+            ViewData["DersBolumAkademikPersonelDetails"] = _dBAPService.GetDetailsByBolumId(bolumId);
+            ViewData["Derslikler"] = _derslikService.GetList();
+            ViewData["AkademikPersoneller"] = _akademikPersonelService.GetList();
 
-                ViewData["DersBolumAkademikPersonel"] = dersBolumAkademikPersonel;
-                ViewData["DersBolumAkademikPersonelDetails"] = dersBolumAkademikPersonelDetails;
-                ViewData["Derslikler"] = derslikler;
-                ViewData["AkademikPersoneller"] = akademikPersoneller;
-                ViewData["BolumId"] = bolumId;
-                ViewData["SinavDetay"] = sinavDetayResult;
+            var sinavDetayResult = _sinavDetayService.GetByBolumId(bolumId);
+            ViewData["SinavDetay"] = sinavDetayResult;
 
-                return View();
-            }
-            catch (Exception ex)
-            {
-                return View("Error", ex.Message);
-            }
+            return View();
         }
 
-        [Route("/report/bolum/{bolumId}")]
-        public async Task<IActionResult> Report(int bolumId)
-        {
-            if (bolumId <= 0) return Json("Geçersiz bölüm ID'si.");
-
-            try
-            {
-                var dersBolumAkademikPersonel = await _httpService.GetAsync<List<DersBolumAkademikPersonel>>($"api/bolumdersakademikpersonel/bolum/{bolumId}");
-                var dersBolumAkademikPersonelDetails = await _httpService.GetAsync<List<DersBolumAkademikPersonel>>($"api/bolumdersakademikpersonel/bolum/{bolumId}/details");
-                var derslikler = await _httpService.GetAsync<List<Derslik>>("api/derslik");
-                var akademikPersoneller = await _httpService.GetAsync<List<AkademikPersonel>>("api/akademikpersonel");
-                var sinavDetayResult = await _httpService.GetAsync<List<SinavDetay>>($"api/sinavdetay/bolum/{bolumId}");
-
-                ViewData["DersBolumAkademikPersonel"] = dersBolumAkademikPersonel;
-                ViewData["DersBolumAkademikPersonelDetails"] = dersBolumAkademikPersonelDetails;
-                ViewData["Derslikler"] = derslikler;
-                ViewData["AkademikPersoneller"] = akademikPersoneller;
-                ViewData["SinavDetay"] = sinavDetayResult;
-
-                return View();
-            }
-            catch (Exception ex)
-            {
-                return View("Error", ex.Message);
-            }
-        }
-
+        // Yeni sınav detayı ekleme işlemi - POST
         [HttpPost]
         [Route("/SinavDetay/Add")]
-        public async Task<IActionResult> Add([FromBody] SinavKayitDTO model)
+        public IActionResult Add([FromBody] SinavKayitDTO model)
         {
             try
             {
-                var result = await _httpService.PostAsync<object>("api/sinavdetay", model);
-                return Json(new { success = true, message = "Sınav başarıyla eklendi." });
+                var result = _sinavDetayService.Add(model);
+
+                if (!result.Success)
+                    return Json(new { success = false, message = result.Message });
+                
+
+
+                return Json(new { success = true, message = result.Message });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { success = false, message = "İşlem sırasında bir hata oluştu: " + ex.Message });
             }
         }
 
+        // Sınav detayını düzenleme işlemi - POST
         [HttpPost]
-        public async Task<IActionResult> Update([FromBody] SinavGuncelleDTO model)
+        public IActionResult Update([FromBody] SinavGuncelleDTO model)
         {
             try
             {
+                // Gelen modelin geçerliliğini kontrol et
                 if (model == null || model.Id <= 0)
                 {
                     return Json(new { success = false, message = "Geçersiz sınav verisi." });
                 }
 
-                var result = await _httpService.PutAsync<object>("api/sinavdetay", model);
+                // Önce mevcut sınav-derslik eşleştirmelerini sil
+                var mevcutDerslikler = _sinavDerslikService.GetBySinavDetayId(model.Id);
+                if (mevcutDerslikler.Success)
+                {
+                    foreach (var derslik in mevcutDerslikler.Data)
+                    {
+                        _sinavDerslikService.Delete(derslik);
+                    }
+                }
+
+                // Sınav detayını güncelle
+                var sinavDetay = new SinavDetay
+                {
+                    Id = model.Id,
+                    DerBolumAkademikPersonelId = model.DbapId,
+                    SinavTarihi = model.SinavTarihi,
+                    SinavBaslangicSaati = model.SinavBaslangicSaati,
+                    SinavBitisSaati = model.SinavBitisSaati
+                };
+
+                var updateResult = _sinavDetayService.Update(sinavDetay);
+                if (!updateResult.Success)
+                {
+                    return Json(new { success = false, message = updateResult.Message });
+                }
+
+                // Yeni derslik-gözetmen eşleştirmelerini ekle
+                foreach (var derslik in model.Derslikler)
+                {
+                    var sinavDerslik = new SinavDerslik
+                    {
+                        SinavDetayId = model.Id,
+                        DerslikId = derslik.DerslikId,
+                        GozetmenId = derslik.GozetmenId ?? 0
+                    };
+
+                    var derslikResult = _sinavDerslikService.Add(sinavDerslik);
+                    if (!derslikResult.Success)
+                    {
+                        return Json(new { success = false, message = derslikResult.Message });
+                    }
+                }
+
                 return Json(new { success = true, message = "Sınav başarıyla güncellendi." });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                Console.WriteLine($"Güncelleme hatası: {ex}");
+                return Json(new { success = false, message = "Güncelleme sırasında bir hata oluştu: " + ex.Message });
             }
         }
 
+        // Sınav detayını silme işlemi
         [HttpPost]
-        public async Task<IActionResult> Delete([FromBody] int id)
+        public IActionResult Delete([FromBody] int id)
         {
             try
             {
-                var result = await _httpService.DeleteAsync<object>($"api/sinavdetay/{id}");
-                return Json(new { success = true, message = "Sınav başarıyla silindi." });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> GetSinavlarByDerslik([FromBody] int? derslikId)
-        {
-            try
-            {
-                var sinavlar = await _httpService.GetAsync<List<SinavDetay>>("api/sinavdetay/details");
-                if (!derslikId.HasValue)
+                /*// 1. Önce SinavDerslik eşleştirmelerini sil
+                var sinavDerslikler = _sinavDerslikService.GetBySinavDetayId(id);
+                foreach (var sinavDerslik in sinavDerslikler.Data)
                 {
-                    return Json(new { success = true, data = sinavlar });
+                    _sinavDerslikService.Delete(sinavDerslik);
                 }
 
-                var result = await _httpService.GetAsync<List<SinavDetay>>($"api/sinavdetay/derslik/{derslikId}");
+                // 2. Sonra SinavDetay'ı sil
+                var sinavDetay = new SinavDetay { Id = id };
+                var result = _sinavDetayService.Delete(sinavDetay);
+
+                if (!result.Success)
+                {
+                    return Json(new { success = false, message = result.Message });
+                }*/
+
+                return Json(new { success = false, message = "Yapım Aşamasında (~yasirsharp)." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Silme işlemi sırasında bir hata oluştu: " + ex.Message });
+            }
+        }
+
+        // Dersliğe göre sınavları getiren action
+        [HttpPost]
+        public IActionResult GetSinavlarByDerslik([FromBody] int? derslikId)
+        {
+            try 
+            {
+                var sinavlar = _sinavDetayService.GetAllDetails();
+                if (!sinavlar.Success)
+                {
+                    return Json(new { success = false, message = sinavlar.Message });
+                }
+
+                // Eğer derslikId null ise tüm sınavları döndür
+                if (!derslikId.HasValue)
+                {
+                    return Json(new { success = true, data = sinavlar.Data });
+                }
+
+                var result = _sinavDerslikService.GetByDerslikId(derslikId.Value);
                 return Json(new { success = true, data = result });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { success = false, message = "Sınavlar getirilirken bir hata oluştu: " + ex.Message });
             }
         }
 
+        // Sınav detayına ait derslikleri getiren action
         [HttpGet]
         [Route("SinavDetay/GetSinavDerslikler/{sinavDetayId}")]
-        public async Task<IActionResult> GetSinavDerslikler(int sinavDetayId)
+        public IActionResult GetSinavDerslikler(int sinavDetayId)
         {
             try
             {
-                var result = await _httpService.GetAsync<List<SinavDerslik>>($"api/sinavdetay/{sinavDetayId}/derslikler");
-                return Json(new { success = true, data = result });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
+                var result = _sinavDerslikService.GetBySinavDetayId(sinavDetayId);
+                if (!result.Success)
+                {
+                    return Json(new { success = false, message = result.Message });
+                }
 
-        [HttpGet]
-        [Route("SinavDetay/GetSinavDersliklerDetay/{sinavDetayId}")]
-        public async Task<IActionResult> GetSinavDersliklerDetay(int sinavDetayId)
-        {
-            try
-            {
-                var result = await _httpService.GetAsync<List<object>>($"api/sinavdetay/{sinavDetayId}/derslikler/detay");
-                return Json(new { success = true, data = result });
+                return Json(new { success = true, data = result.Data });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { success = false, message = "Derslik bilgileri getirilirken bir hata oluştu: " + ex.Message });
             }
         }
     }

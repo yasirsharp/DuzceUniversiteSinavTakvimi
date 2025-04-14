@@ -1,76 +1,57 @@
-﻿using Entity.Concrete;
-using Frontend1.Services;
+﻿using Business.Abstract;
+using Business.Concrete;
+using DataAccess.Concrete;
+using Entity.Concrete;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend1.Controllers
 {
     public class DerslikController : Controller
     {
-        private readonly HttpService _httpService;
+        IDerslikService _derslikService;
 
-        public DerslikController(HttpService httpService)
+        public DerslikController(IDerslikService derslikService)
         {
-            _httpService = httpService;
+            _derslikService = derslikService;
         }
 
         [HttpGet]
         [Route("Derslik/index")]
         [Route("Derslik/Yonetim")]
         [Route("Derslik/DerslikYonetim")]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            try
-            {
-                var derslikler = await _httpService.GetAsync<List<Derslik>>("api/derslik");
-                return View(derslikler);
-            }
-            catch (Exception ex)
-            {
-                return View(new List<Derslik>());
-            }
+            return View(_derslikService.GetList().Data);
         }
-
         [HttpPost]
         [Route("/Derslik/Add")]
-        public async Task<IActionResult> Add([FromBody] Derslik derslik)
+        public IActionResult Add([FromBody] Derslik derslik)
         {
-            try
-            {
-                var result = await _httpService.PostAsync<object>("api/derslik", derslik);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = _derslikService.Add(derslik);
+            
+            if (!result.Success) return BadRequest();
+
+            return Ok(result.Message);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Delete([FromBody] Derslik derslik)
+        public IActionResult Delete([FromBody] Derslik derslik)
         {
-            try
-            {
-                var result = await _httpService.DeleteAsync<object>($"api/derslik/{derslik.Id}");
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = _derslikService.Delete(derslik);
+
+            if (!result.Success) return BadRequest();
+
+            return Ok(result.Message);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Update([FromBody] Derslik derslik)
+        public IActionResult Update([FromBody] Derslik derslik)
         {
-            try
-            {
-                var result = await _httpService.PutAsync<object>("api/derslik", derslik);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = _derslikService.Update(derslik);
+
+            if (!result.Success) return BadRequest();
+
+            return Ok(result.Message);
         }
     }
 }

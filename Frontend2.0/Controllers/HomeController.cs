@@ -1,11 +1,8 @@
-using Business.Concrete;
-using DataAccess.Concrete;
-using Entity.Concrete;
-using Frontend1.Models;
+using Frontend2._0.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
-namespace Frontend1.Controllers
+namespace Frontend2._0.Controllers
 {
     public class HomeController : Controller
     {
@@ -15,7 +12,7 @@ namespace Frontend1.Controllers
         {
             _logger = logger;
         }
-        [HttpGet]
+
         public IActionResult Index()
         {
             return View();
@@ -25,8 +22,6 @@ namespace Frontend1.Controllers
         {
             return View();
         }
-
-
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
