@@ -3,7 +3,7 @@
 @using Entity.DTOs
 @using Microsoft.AspNetCore.Html
 @{
-    ViewData["Title"] = "Sınav Detay Yönetimi";
+    ViewData["Title"] = "Sınav Takvimi";
 }
 
 <div class="container-fluid">
@@ -11,306 +11,345 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Sınav Listesi</h3>
+                    <h3 class="card-title">Sınav Takvimi</h3>
                     <div class="card-tools">
-                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#sinavModal">
-                            Yeni Sınav Ekle
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sinavModal">
+                            <i class="fas fa-plus"></i> Yeni Sınav Ekle
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <table id="sinavTable" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Bölüm</th>
-                                <th>Ders</th>
-                                <th>Akademik Personel</th>
-                                <th>Sınav Tarihi</th>
-                                <th>Başlangıç Saati</th>
-                                <th>Bitiş Saati</th>
-                                <th>Derslikler</th>
-                                <th>İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in ViewData["SinavDetay"] as IEnumerable<Entity.DTOs.SinavDetayDTO>)
-                            {
-                                <tr>
-                                    <td>@item.Id</td>
-                                    <td>@item.BolumAd</td>
-                                    <td>@item.DersAd</td>
-                                    <td>@item.AkademikPersonelAd (@item.Unvan)</td>
-                                    <td>@item.SinavTarihi.ToString("dd.MM.yyyy")</td>
-                                    <td>@item.SinavBaslangicSaati.ToString("HH:mm")</td>
-                                    <td>@item.SinavBitisSaati.ToString("HH:mm")</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info view-derslikler" data-id="@item.Id">
-                                            Derslikleri Görüntüle
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info edit-sinav" data-id="@item.Id">Düzenle</button>
-                                        <button class="btn btn-sm btn-danger delete-sinav" data-id="@item.Id">Sil</button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                    <div id="calendar"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Sınav Modal -->
-<div class="modal fade" id="sinavModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<!-- Sınav Ekleme/Düzenleme Modal -->
+<div class="modal fade" id="sinavModal" tabindex="-1" aria-labelledby="sinavModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Sınav Detayı</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="sinavModalLabel">Sınav Bilgileri</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="sinavForm">
                     <input type="hidden" id="sinavId" />
-                    <div class="form-group">
-                        <label for="dbapId">Bölüm-Ders-Akademik Personel</label>
-                        <select class="form-control" id="dbapId" required>
-                            <option value="">Seçiniz</option>
-                            @foreach (var item in ViewData["DBAPDetail"] as IEnumerable<Entity.DTOs.DersBolumAkademikPersonelDTO>)
-                            {
-                                <option value="@item.Id">@item.BolumAd - @item.DersAd (@item.AkademikPersonelAd)</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="sinavTarihi">Sınav Tarihi</label>
-                        <input type="date" class="form-control" id="sinavTarihi" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="sinavBaslangicSaati">Başlangıç Saati</label>
-                        <input type="time" class="form-control" id="sinavBaslangicSaati" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="sinavBitisSaati">Bitiş Saati</label>
-                        <input type="time" class="form-control" id="sinavBitisSaati" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Derslikler ve Gözetmenler</label>
-                        <div id="derslikContainer">
-                            <div class="derslik-row mb-2">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <select class="form-control derslik-select" required>
-                                            <option value="">Derslik Seçiniz</option>
-                                            @foreach (var derslik in ViewData["Derslikler"] as IEnumerable<Entity.Concrete.Derslik>)
-                                            {
-                                                <option value="@derslik.Id">@derslik.Ad (Kapasite: @derslik.Kapasite)</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <select class="form-control gozetmen-select" required>
-                                            <option value="">Gözetmen Seçiniz</option>
-                                            @foreach (var personel in ViewData["AkademikPersoneller"] as IEnumerable<Entity.Concrete.AkademikPersonel>)
-                                            {
-                                                <option value="@personel.Id">@personel.Ad (@personel.Unvan)</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="dbapId">Ders-Bölüm-Akademik Personel</label>
+                                <select class="form-control" id="dbapId" required>
+                                    <option value="">Seçiniz</option>
+                                    @foreach (var item in ViewData["DBAPDetail"] as IEnumerable<Entity.DTOs.DersBolumAkademikPersonelDTO>)
+                                    {
+                                        <option value="@item.Id">@item.DersAd - @item.BolumAd - @item.AkademikPersonelAd</option>
+                                    }
+                                </select>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-secondary btn-sm" id="addDerslik">Derslik Ekle</button>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="sinavTarihi">Sınav Tarihi</label>
+                                <input type="date" class="form-control" id="sinavTarihi" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="baslangicSaati">Başlangıç Saati</label>
+                                <input type="time" class="form-control" id="baslangicSaati" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="bitisSaati">Bitiş Saati</label>
+                                <input type="time" class="form-control" id="bitisSaati" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label>Derslik ve Gözetmenler</label>
+                                <div id="derslikContainer">
+                                    <div class="derslik-item mb-2">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <select class="form-control derslik-select" required>
+                                                    <option value="">Derslik Seçiniz</option>
+                                                    @foreach (var item in ViewData["Derslikler"] as IEnumerable<Entity.Concrete.Derslik>)
+                                                    {
+                                                        <option value="@item.Id">@item.Ad (Kapasite: @item.Kapasite)</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <select class="form-control gozetmen-select">
+                                                    <option value="">Gözetmen Seçiniz (Opsiyonel)</option>
+                                                    @foreach (var item in ViewData["AkademikPersoneller"] as IEnumerable<Entity.Concrete.AkademikPersonel>)
+                                                    {
+                                                        <option value="@item.Id">@item.Ad @item.Unvan</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-secondary mt-2" id="addDerslik">
+                                    <i class="fas fa-plus"></i> Derslik Ekle
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
                 <button type="button" class="btn btn-primary" id="saveSinav">Kaydet</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Derslikler Modal -->
-<div class="modal fade" id="dersliklerModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Derslikler ve Gözetmenler</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Derslik</th>
-                            <th>Gözetmen</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dersliklerTableBody">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <script>
-        $(document).ready(function () {
-            // DataTable initialization
-            $('#sinavTable').DataTable({
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Turkish.json"
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'tr',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: '/SinavDetay/GetEvents',
+                eventClick: function(info) {
+                    showEventDetails(info.event);
+                },
+                dateClick: function(info) {
+                    openModalForNewEvent(info.date);
+                },
+                eventDrop: function(info) {
+                    updateEvent(info.event);
+                },
+                eventResize: function(info) {
+                    updateEvent(info.event);
+                }
+            });
+            calendar.render();
+
+            // Derslik ekleme butonu
+            document.getElementById('addDerslik').addEventListener('click', function() {
+                var template = document.querySelector('.derslik-item').cloneNode(true);
+                var removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'btn btn-danger btn-sm mt-2';
+                removeButton.innerHTML = '<i class="fas fa-trash"></i> Sil';
+                removeButton.onclick = function() {
+                    template.remove();
+                };
+                template.appendChild(removeButton);
+                document.getElementById('derslikContainer').appendChild(template);
+            });
+
+            // Modal kapatıldığında formu temizle
+            document.getElementById('sinavModal').addEventListener('hidden.bs.modal', function() {
+                document.getElementById('sinavForm').reset();
+                document.getElementById('sinavId').value = '';
+                var container = document.getElementById('derslikContainer');
+                while (container.children.length > 1) {
+                    container.removeChild(container.lastChild);
                 }
             });
 
-            // Derslik ekleme butonu
-            $('#addDerslik').click(function () {
-                var newRow = $('.derslik-row:first').clone();
-                newRow.find('select').val('');
-                newRow.find('.remove-derslik').remove();
-                newRow.append('<div class="col-md-12 mt-2"><button type="button" class="btn btn-danger btn-sm remove-derslik">Kaldır</button></div>');
-                $('#derslikContainer').append(newRow);
-            });
+            // Kaydet butonu
+            document.getElementById('saveSinav').addEventListener('click', function() {
+                var formData = getFormData();
+                if (!formData) return;
 
-            // Derslik kaldırma
-            $(document).on('click', '.remove-derslik', function () {
-                $(this).closest('.derslik-row').remove();
-            });
+                var url = formData.id ? '/SinavDetay/Update' : '/SinavDetay/Add';
+                var method = formData.id ? 'PUT' : 'POST';
 
-            // Yeni sınav ekleme
-            $('#saveSinav').click(function () {
-                var derslikler = [];
-                $('.derslik-row').each(function () {
-                    var derslikId = $(this).find('.derslik-select').val();
-                    var gozetmenId = $(this).find('.gozetmen-select').val();
-                    if (derslikId && gozetmenId) {
-                        derslikler.push({
-                            DerslikId: parseInt(derslikId),
-                            GozetmenId: parseInt(gozetmenId)
-                        });
-                    }
-                });
-
-                var sinav = {
-                    Id: $('#sinavId').val(),
-                    DerBolumAkademikPersonelId: $('#dbapId').val(),
-                    SinavTarihi: $('#sinavTarihi').val(),
-                    SinavBaslangicSaati: $('#sinavBaslangicSaati').val(),
-                    SinavBitisSaati: $('#sinavBitisSaati').val(),
-                    Derslikler: derslikler
-                };
-
-                var url = sinav.Id ? '/SinavDetay/Update' : '/SinavDetay/Add';
-                var method = sinav.Id ? 'PUT' : 'POST';
-
-                $.ajax({
-                    url: url,
-                    type: method,
-                    contentType: 'application/json',
-                    data: JSON.stringify(sinav),
-                    success: function (response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
-                            alert('Hata: ' + response.message);
-                        }
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
                     },
-                    error: function (xhr) {
-                        alert('Bir hata oluştu: ' + xhr.responseText);
-                    }
-                });
-            });
-
-            // Derslikleri görüntüleme
-            $('.view-derslikler').click(function () {
-                var id = $(this).data('id');
-                $.get('/SinavDetay/GetSinavDerslikler/' + id, function (response) {
-                    if (response.success) {
-                        var html = '';
-                        response.data.forEach(function (item) {
-                            html += '<tr><td>' + item.derslikAd + '</td><td>' + item.gozetmenAd + '</td></tr>';
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı!',
+                            text: data.message
                         });
-                        $('#dersliklerTableBody').html(html);
-                        $('#dersliklerModal').modal('show');
+                        calendar.refetchEvents();
+                        bootstrap.Modal.getInstance(document.getElementById('sinavModal')).hide();
                     } else {
-                        alert('Hata: ' + response.message);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: data.message
+                        });
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata!',
+                        text: 'Bir hata oluştu: ' + error.message
+                    });
                 });
             });
 
-            // Sınav düzenleme
-            $('.edit-sinav').click(function () {
-                var id = $(this).data('id');
-                $.get('/SinavDetay/GetById/' + id, function (sinav) {
-                    $('#sinavId').val(sinav.id);
-                    $('#dbapId').val(sinav.derBolumAkademikPersonelId);
-                    $('#sinavTarihi').val(sinav.sinavTarihi.split('T')[0]);
-                    $('#sinavBaslangicSaati').val(sinav.sinavBaslangicSaati);
-                    $('#sinavBitisSaati').val(sinav.sinavBitisSaati);
+            function getFormData() {
+                var derslikler = [];
+                document.querySelectorAll('.derslik-item').forEach(function(item) {
+                    var derslikId = item.querySelector('.derslik-select').value;
+                    var gozetmenId = item.querySelector('.gozetmen-select').value;
+                    if (!derslikId) return;
 
-                    // Derslikleri temizle
-                    $('#derslikContainer').empty();
+                    derslikler.push({
+                        derslikId: parseInt(derslikId),
+                        gozetmenId: gozetmenId ? parseInt(gozetmenId) : null
+                    });
+                });
 
-                    // Derslikleri ekle
-                    $.get('/SinavDetay/GetSinavDerslikler/' + id, function (response) {
-                        if (response.success) {
-                            response.data.forEach(function (item) {
-                                var newRow = $('.derslik-row:first').clone();
-                                newRow.find('.derslik-select').val(item.derslikId);
-                                newRow.find('.gozetmen-select').val(item.gozetmenId);
-                                newRow.find('.remove-derslik').remove();
-                                newRow.append('<div class="col-md-12 mt-2"><button type="button" class="btn btn-danger btn-sm remove-derslik">Kaldır</button></div>');
-                                $('#derslikContainer').append(newRow);
+                if (derslikler.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata!',
+                        text: 'En az bir derslik seçmelisiniz.'
+                    });
+                    return null;
+                }
+
+                return {
+                    id: document.getElementById('sinavId').value || 0,
+                    dbapId: parseInt(document.getElementById('dbapId').value),
+                    sinavTarihi: document.getElementById('sinavTarihi').value,
+                    sinavBaslangicSaati: document.getElementById('baslangicSaati').value,
+                    sinavBitisSaati: document.getElementById('bitisSaati').value,
+                    derslikler: derslikler
+                };
+            }
+
+            function showEventDetails(event) {
+                fetch(`/SinavDetay/GetEventDetails/${event.id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            var details = data.data;
+                            var content = `
+                                <h5>${details.sinavDetay.dersAd} - ${details.sinavDetay.bolumAd}</h5>
+                                <p><strong>Akademik Personel:</strong> ${details.sinavDetay.akademikPersonelAd}</p>
+                                <p><strong>Tarih:</strong> ${new Date(details.sinavDetay.sinavTarihi).toLocaleDateString('tr-TR')}</p>
+                                <p><strong>Saat:</strong> ${details.sinavDetay.sinavBaslangicSaati} - ${details.sinavDetay.sinavBitisSaati}</p>
+                                <h6>Derslikler:</h6>
+                                <ul>
+                            `;
+                            details.derslikler.forEach(derslik => {
+                                content += `<li>${derslik.derslikAd} (Gözetmen: ${derslik.gozetmenAd || 'Belirtilmemiş'})</li>`;
+                            });
+                            content += '</ul>';
+
+                            Swal.fire({
+                                title: 'Sınav Detayları',
+                                html: content,
+                                showCancelButton: true,
+                                confirmButtonText: 'Düzenle',
+                                cancelButtonText: 'Kapat'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    openModalForEdit(details);
+                                }
                             });
                         }
                     });
+            }
 
-                    $('#sinavModal').modal('show');
+            function openModalForNewEvent(date) {
+                document.getElementById('sinavId').value = '';
+                document.getElementById('sinavTarihi').value = date.toISOString().split('T')[0];
+                document.getElementById('baslangicSaati').value = '09:00';
+                document.getElementById('bitisSaati').value = '10:00';
+                new bootstrap.Modal(document.getElementById('sinavModal')).show();
+            }
+
+            function openModalForEdit(details) {
+                document.getElementById('sinavId').value = details.sinavDetay.id;
+                document.getElementById('dbapId').value = details.sinavDetay.derBolumAkademikPersonelId;
+                document.getElementById('sinavTarihi').value = new Date(details.sinavDetay.sinavTarihi).toISOString().split('T')[0];
+                document.getElementById('baslangicSaati').value = details.sinavDetay.sinavBaslangicSaati;
+                document.getElementById('bitisSaati').value = details.sinavDetay.sinavBitisSaati;
+
+                // Derslikleri temizle ve yeniden oluştur
+                var container = document.getElementById('derslikContainer');
+                container.innerHTML = '';
+                details.derslikler.forEach((derslik, index) => {
+                    var template = document.querySelector('.derslik-item').cloneNode(true);
+                    template.querySelector('.derslik-select').value = derslik.derslikId;
+                    template.querySelector('.gozetmen-select').value = derslik.gozetmenId || '';
+                    
+                    if (index > 0) {
+                        var removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.className = 'btn btn-danger btn-sm mt-2';
+                        removeButton.innerHTML = '<i class="fas fa-trash"></i> Sil';
+                        removeButton.onclick = function() {
+                            template.remove();
+                        };
+                        template.appendChild(removeButton);
+                    }
+                    
+                    container.appendChild(template);
                 });
-            });
 
-            // Sınav silme
-            $('.delete-sinav').click(function () {
-                if (confirm('Bu sınavı silmek istediğinizden emin misiniz?')) {
-                    var id = $(this).data('id');
-                    $.ajax({
-                        url: '/SinavDetay/Delete',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ Id: id }),
-                        success: function (response) {
-                            if (response.success) {
-                                location.reload();
-                            } else {
-                                alert('Hata: ' + response.message);
-                            }
-                        },
-                        error: function (xhr) {
-                            alert('Bir hata oluştu: ' + xhr.responseText);
-                        }
-                    });
-                }
-            });
+                new bootstrap.Modal(document.getElementById('sinavModal')).show();
+            }
 
-            // Modal kapandığında formu temizle
-            $('#sinavModal').on('hidden.bs.modal', function () {
-                $('#sinavForm')[0].reset();
-                $('#sinavId').val('');
-                $('#derslikContainer').empty();
-                var newRow = $('.derslik-row:first').clone();
-                newRow.find('select').val('');
-                newRow.find('.remove-derslik').remove();
-                $('#derslikContainer').append(newRow);
-            });
+            function updateEvent(event) {
+                var formData = {
+                    id: event.id,
+                    dbapId: event.extendedProps.dbapId,
+                    sinavTarihi: event.start.toISOString().split('T')[0],
+                    sinavBaslangicSaati: event.start.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+                    sinavBitisSaati: event.end.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+                    derslikler: event.extendedProps.derslikler
+                };
+
+                fetch('/SinavDetay/Update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: data.message
+                        });
+                        event.revert();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    event.revert();
+                });
+            }
         });
     </script>
 }

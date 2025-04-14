@@ -23,35 +23,53 @@ namespace Frontend1.Controllers
         {
             return View(_derslikService.GetList().Data);
         }
+
+        [HttpGet]
+        [Route("Derslik/GetById/{id}")]
+        public IActionResult GetById(int id)
+        {
+            var result = _derslikService.GetById(id);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
         [HttpPost]
         [Route("/Derslik/Add")]
         public IActionResult Add([FromBody] Derslik derslik)
         {
             var result = _derslikService.Add(derslik);
-            
-            if (!result.Success) return BadRequest();
-
-            return Ok(result.Message);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
         }
 
         [HttpPost]
-        public IActionResult Delete([FromBody] Derslik derslik)
-        {
-            var result = _derslikService.Delete(derslik);
-
-            if (!result.Success) return BadRequest();
-
-            return Ok(result.Message);
-        }
-
-        [HttpPost]
+        [Route("/Derslik/Update")]
         public IActionResult Update([FromBody] Derslik derslik)
         {
             var result = _derslikService.Update(derslik);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
 
-            if (!result.Success) return BadRequest();
-
-            return Ok(result.Message);
+        [HttpPost]
+        [Route("/Derslik/Delete")]
+        public IActionResult Delete([FromBody] Derslik derslik)
+        {
+            var result = _derslikService.Delete(derslik);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
         }
     }
 }

@@ -111,7 +111,21 @@ namespace DataAccess.Concrete.EntityFramework
                                  DerslikKontenjan = dlik.Kapasite,
                                  GozetmenId = sd.GozetmenId,
                                  DersBolumAkademikPersonelId = dba.Id,
-                                 SinavBitisSaati = s.SinavBitisSaati
+                                 SinavBitisSaati = s.SinavBitisSaati,
+                                 Derslikler = context.SinavDerslik
+                                     .Where(x => x.SinavDetayId == s.Id)
+                                     .Select(x => new DerslikGozetmenDTO
+                                     {
+                                         DerslikId = x.DerslikId,
+                                         GozetmenId = x.GozetmenId
+                                     }).ToList(),
+                                 Gozetmenler = context.SinavDerslik
+                                     .Where(x => x.SinavDetayId == s.Id)
+                                     .Join(context.AkademikPersonel,
+                                         sd => sd.GozetmenId,
+                                         ap => ap.Id,
+                                         (sd, ap) => ap)
+                                     .ToList()
                              };
 
                 return result.ToList();
@@ -131,7 +145,7 @@ namespace DataAccess.Concrete.EntityFramework
                              where s.Id == sinavDetayId
                              select new SinavDetayDTO
                              {
-                                 Id = dba.Id,
+                                 Id = s.Id,
                                  DersAd = d.Ad,
                                  BolumAd = b.Ad,
                                  DerslikId = sd.DerslikId,
@@ -141,7 +155,21 @@ namespace DataAccess.Concrete.EntityFramework
                                  SinavTarihi = s.SinavTarihi,
                                  SinavBaslangicSaati = s.SinavBaslangicSaati,
                                  SinavBitisSaati = s.SinavBitisSaati,
-                                 DersBolumAkademikPersonelId = dba.Id
+                                 DersBolumAkademikPersonelId = dba.Id,
+                                 Derslikler = context.SinavDerslik
+                                     .Where(x => x.SinavDetayId == s.Id)
+                                     .Select(x => new DerslikGozetmenDTO
+                                     {
+                                         DerslikId = x.DerslikId,
+                                         GozetmenId = x.GozetmenId
+                                     }).ToList(),
+                                 Gozetmenler = context.SinavDerslik
+                                     .Where(x => x.SinavDetayId == s.Id)
+                                     .Join(context.AkademikPersonel,
+                                         sd => sd.GozetmenId,
+                                         ap => ap.Id,
+                                         (sd, ap) => ap)
+                                     .ToList()
                              };
 
                 return result.FirstOrDefault()!;
@@ -161,7 +189,7 @@ namespace DataAccess.Concrete.EntityFramework
                              join dlik in context.Derslik on sd.DerslikId equals dlik.Id
                              select new SinavDetayDTO
                              {
-                                 Id = dba.Id,
+                                 Id = s.Id,
                                  DersAd = d.Ad,
                                  BolumAd = b.Ad,
                                  AkademikPersonelAd = ap.Ad,
@@ -172,7 +200,21 @@ namespace DataAccess.Concrete.EntityFramework
                                  DerslikId = sd.DerslikId,
                                  DerslikKontenjan = dlik.Kapasite,
                                  GozetmenId = sd.GozetmenId,
-                                 DersBolumAkademikPersonelId = dba.Id
+                                 DersBolumAkademikPersonelId = dba.Id,
+                                 Derslikler = context.SinavDerslik
+                                     .Where(x => x.SinavDetayId == s.Id)
+                                     .Select(x => new DerslikGozetmenDTO
+                                     {
+                                         DerslikId = x.DerslikId,
+                                         GozetmenId = x.GozetmenId
+                                     }).ToList(),
+                                 Gozetmenler = context.SinavDerslik
+                                     .Where(x => x.SinavDetayId == s.Id)
+                                     .Join(context.AkademikPersonel,
+                                         sd => sd.GozetmenId,
+                                         ap => ap.Id,
+                                         (sd, ap) => ap)
+                                     .ToList()
                              };
 
                 return result.ToList();

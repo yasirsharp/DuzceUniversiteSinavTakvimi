@@ -5,15 +5,42 @@
     ViewData["Title"] = "Görevli Sınav Yönetimi";
 }
 
-<h2>Görevli Sınav Yönetimi</h2>
-
-<div class="bolum-container">
-    @foreach (var bolum in Model)
-    {
-        <div class="bolum-card" data-bolum-id="@bolum.Id">
-            <h3>@bolum.Ad</h3>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Görevli Olduğunuz Bölümler</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Bölüm Adı</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var bolum in Model)
+                                {
+                                    <tr>
+                                        <td>@bolum.Ad</td>
+                                        <td>
+                                            <a href="@Url.Action("TakvimeGit", "GorevliSinavYonetim", new { bolumId = bolum.Id })" 
+                                               class="btn btn-primary">
+                                                <i class="fas fa-calendar"></i> Takvime Git
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-    }
+    </div>
 </div>
 
 <div id="sinav-listesi" class="sinav-container" style="display: none;">

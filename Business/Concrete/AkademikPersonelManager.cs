@@ -14,11 +14,13 @@ namespace Business.Concrete
     {
         private readonly IAkademikPersonelDal _akademikPersonelDal;
         IDBAPDal _dBAPDal;
+        ISinavDetayDal _sinavDetayDal;
 
-        public AkademikPersonelManager(IAkademikPersonelDal akademikPersonelDal, IDBAPDal dBAPDal)
+        public AkademikPersonelManager(IAkademikPersonelDal akademikPersonelDal, IDBAPDal dBAPDal,ISinavDetayDal sinavDetayDal)
         {
             _akademikPersonelDal = akademikPersonelDal;
             _dBAPDal = dBAPDal;
+            _sinavDetayDal = sinavDetayDal;
         }
 
         public IResult Add(AkademikPersonel akademikPersonel)
@@ -97,5 +99,6 @@ namespace Business.Concrete
                 return new ErrorResult("Güncelleme işlemi sırasında bir hata oluştu: " + ex.Message);
             }
         }
+        
     }
 }

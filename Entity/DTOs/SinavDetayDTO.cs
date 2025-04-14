@@ -1,5 +1,7 @@
 ﻿using Core.Entities;
 using System;
+using System.Collections.Generic;
+using Entity.Concrete;
 
 namespace Entity.DTOs
 {
@@ -17,5 +19,7 @@ namespace Entity.DTOs
         public DateTime SinavTarihi { get; set; }
         public TimeOnly SinavBaslangicSaati { get; set; }
         public TimeOnly SinavBitisSaati { get; set; }
+        public List<DerslikGozetmenDTO> Derslikler { get; set; }
+        public List<AkademikPersonel> Gozetmenler { get; set; }
     }
 }
