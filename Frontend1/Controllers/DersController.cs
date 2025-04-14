@@ -28,7 +28,7 @@ namespace Frontend1.Controllers
         public IActionResult Add([FromBody] Ders ders)
         {
             var result = _dersService.Add(ders);
-            if(result.Success) return Ok();
+            if(result.Success) return Ok(result);
 
             return BadRequest(new { message = result.Message });
         }
@@ -39,9 +39,9 @@ namespace Frontend1.Controllers
         public IActionResult Delete([FromBody] Ders ders)
         {
             var result = _dersService.Delete(ders);
-            if (result.Success) return Ok();
+            if (result.Success) return Ok(result);
 
-            return BadRequest(new { message = result.Message });
+            return BadRequest(result.Message);
         }
 
         [HttpGet]
@@ -50,7 +50,7 @@ namespace Frontend1.Controllers
             var ders = _dersService.GetById(id);
             if (ders.Data != null)
             {
-                return Ok(ders.Data); // Ders nesnesini JSON olarak döner
+                return Ok(ders); // Ders nesnesini JSON olarak döner
             }
             return NotFound();
         }
@@ -63,7 +63,7 @@ namespace Frontend1.Controllers
             }
 
             var result = _dersService.Update(ders);
-            if (result.Success) return Ok();
+            if (result.Success) return Ok(result);
 
             return BadRequest(new { message = result.Message });
         }

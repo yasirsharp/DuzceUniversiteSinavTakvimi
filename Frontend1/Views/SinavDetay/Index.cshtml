@@ -3,363 +3,314 @@
 @using Entity.DTOs
 @using Microsoft.AspNetCore.Html
 @{
-    ViewData["Title"] = $"Sınav Detay {ViewData["BolumID"]}";
-    var dbap = ViewData["DersBolumAkademikPersonel"] as IDataResult<List<DersBolumAkademikPersonel>>;
-    var dbap_detail = ViewData["DersBolumAkademikPersonelDetails"] as IDataResult<List<DersBolumAkademikPersonelDTO>>;
-    var sinavs = ViewData["SinavDetay"] as IDataResult<List<SinavDetayDTO>>;
-    var derslikler = ViewData["Derslikler"] as IDataResult<List<Derslik>>;
+    ViewData["Title"] = "Sınav Detay Yönetimi";
 }
 
-<!-- Veri kontrolü için debug bilgisi ekleyelim -->
-@if (sinavs?.Data == null)
-{
-    <div class="alert alert-warning">
-        Sınav verisi bulunamadı!
-    </div>
-}
-
-@section Styles {
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <style>
-        .calendar-container {
-            height: calc(100vh - 100px);
-            overflow: hidden;
-        }
-
-        .sticky-sidebar {
-            position: sticky;
-            top: 20px;
-            max-height: calc(100vh - 120px);
-            overflow-y: auto;
-        }
-
-        .fc {
-            height: 100% !important;
-            background-color: #fff;
-            padding: 15px;
-            border-radius: 4px;
-            box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
-        }
-
-        .fc-timegrid-slot {
-            height: 50px !important;
-        }
-
-        .fc-timegrid-slot-lane {
-            border-bottom: 1px solid #ddd !important;
-        }
-
-        .fc-timegrid-slots td {
-            height: 50px !important;
-            border-bottom: 1px solid #ddd !important;
-        }
-
-        .fc-col-header-cell {
-            background-color: #f8f9fa;
-            padding: 8px !important;
-        }
-
-        .fc-timegrid-axis {
-            padding: 10px !important;
-        }
-
-        .fc-button-primary {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-        }
-
-        .fc-event {
-            margin: 2px;
-            padding: 3px;
-        }
-
-        .fc-toolbar-chunk {
-            display: flex;
-            gap: 5px;
-        }
-
-        .fc .fc-toolbar {
-            padding: 10px;
-        }
-
-        .fc .fc-toolbar-title {
-            font-size: 1.25rem;
-            margin: 0;
-        }
-
-        .external-event {
-            box-shadow: 0 0 1px rgba(0, 0, 0, 0.125), 0 1px 3px rgba(0, 0, 0, 0.2);
-            border-radius: 3px;
-            cursor: move;
-            font-weight: bold;
-            margin-bottom: 10px;
-            padding: 10px;
-            color: #fff;
-        }
-
-        .bolum-baslik {
-            font-size: 1rem;
-            font-weight: 600;
-            padding: 10px;
-            margin: 15px 0 0 0;
-            border-left: 4px solid #2c3e50;
-            background-color: #f8f9fa;
-            border-radius: 0 4px 4px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .bolum-baslik:hover {
-            background-color: #e9ecef;
-            /* transform: translateX(5px); */
-        }
-
-        .bolum-baslik i.toggle-icon {
-            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            font-size: 1.1rem;
-        }
-
-        .bolum-baslik.collapsed i.toggle-icon {
-            transform: rotate(-180deg);
-        }
-
-        .bolum-dersler {
-            max-height: 1000px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 1;
-            transform-origin: top;
-            transform: scaleY(1);
-            margin-top: 10px;
-        }
-
-        .bolum-dersler.collapsed {
-            max-height: 0;
-            opacity: 0;
-            transform: scaleY(0);
-            margin-top: 0;
-        }
-
-        .external-event {
-            transform: translateX(0);
-            transition: transform 0.3s ease;
-            animation: slideIn 0.3s ease forwards;
-        }
-
-        @@keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .bolum-grup {
-            margin-bottom: 20px;
-        }
-
-        .bolum-grup:first-child .bolum-baslik {
-            margin-top: 0;
-        }
-
-        .export-button {
-            margin-left: 10px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .export-button:hover {
-            background-color: #218838;
-        }
-    </style>
-}
-
-<div class="container-fluid mt-4">
-    @Html.AntiForgeryToken()
+<div class="container-fluid">
     <div class="row">
-        <div class="col-md-3">
-            <div class="sticky-sidebar">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Sürüklenebilir Dersler</h3>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Sınav Listesi</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#sinavModal">
+                            Yeni Sınav Ekle
+                        </button>
                     </div>
-                    <div class="card-body">
-                        <!-- Sol taraftaki derslik seçimi -->
-                        <div class="form-group mb-3">
-                            <label>Derslik Seçimi</label>
-                            <select id="mainDerslikFilter" class="form-control js-example-basic-multiple">
-                                @foreach (var derslik in derslikler.Data)
-                                {
-                                    <option value="@derslik.Id">@derslik.Ad (@derslik.Kapasite)</option>
-                                }
-                            </select>
-                        </div>
-                        
-                        <!-- Sürüklenebilir Etkinlikler -->
-                        <div id="external-events">
-                            @{
-                                var gruplanmisDersler = dbap_detail.Data
-                                    .GroupBy(x => x.BolumId)
-                                    .Select(g => new
-                                    {
-                                        BolumId = g.Key,
-                                        BolumAd = g.First().BolumAd,
-                                        Dersler = g.GroupBy(d => d.Id)
-                                                  .Select(d => d.First())
-                                                  .OrderBy(d => d.DersAd)
-                                    })
-                                    .OrderBy(x => x.BolumAd);
-                            }
-                            
-                            @foreach (var bolum in gruplanmisDersler)
+                </div>
+                <div class="card-body">
+                    <table id="sinavTable" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Bölüm</th>
+                                <th>Ders</th>
+                                <th>Akademik Personel</th>
+                                <th>Sınav Tarihi</th>
+                                <th>Başlangıç Saati</th>
+                                <th>Bitiş Saati</th>
+                                <th>Derslikler</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in ViewData["SinavDetay"] as IEnumerable<Entity.DTOs.SinavDetayDTO>)
                             {
-                                <div class="bolum-grup">
-                                    <div class="bolum-baslik" onclick="toggleDersler(this)">
-                                        <span>
-                                            <i class="bi bi-building me-2"></i>@bolum.BolumAd
-                                        </span>
-                                        <i class="bi bi-chevron-down toggle-icon"></i>
-                                    </div>
-                                    <div class="bolum-dersler">
-                                        @foreach (var ders in bolum.Dersler)
-                                        {
-                                            <div class="external-event" 
-                                                 data-id="@ders.Id" 
-                                                 data-ders-id="@ders.DersId"
-                                                 data-bolum-id="@ders.BolumId">
-                                                <h5>@ders.DersAd</h5>
-                                                <p>@ders.AkademikPersonelAd</p>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>@item.BolumAd</td>
+                                    <td>@item.DersAd</td>
+                                    <td>@item.AkademikPersonelAd (@item.Unvan)</td>
+                                    <td>@item.SinavTarihi.ToString("dd.MM.yyyy")</td>
+                                    <td>@item.SinavBaslangicSaati.ToString("HH:mm")</td>
+                                    <td>@item.SinavBitisSaati.ToString("HH:mm")</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info view-derslikler" data-id="@item.Id">
+                                            Derslikleri Görüntüle
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info edit-sinav" data-id="@item.Id">Düzenle</button>
+                                        <button class="btn btn-sm btn-danger delete-sinav" data-id="@item.Id">Sil</button>
+                                    </td>
+                                </tr>
                             }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-9">
-            <div class="card card-primary calendar-container">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <!-- Buradan derslik filtresini kaldırıyoruz -->
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div id="calendar"></div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Debug bilgisi -->
-<div class="d-none">
-    <h4>Orijinal Veri:</h4>
-    @foreach(var item in dbap_detail.Data)
-    {
-        <p>Id: @item.Id, DersId: @item.DersId, Ders: @item.DersAd, Bolum: @item.BolumAd</p>
-    }
-    
-    <h4>Gruplanmış Veri:</h4>
-    @foreach(var bolum in gruplanmisDersler)
-    {
-        <h5>@bolum.BolumAd</h5>
-        @foreach(var ders in bolum.Dersler)
-        {
-            <p>Id: @ders.Id, DersId: @ders.DersId, Ders: @ders.DersAd</p>
-        }
-    }
+<!-- Sınav Modal -->
+<div class="modal fade" id="sinavModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sınav Detayı</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="sinavForm">
+                    <input type="hidden" id="sinavId" />
+                    <div class="form-group">
+                        <label for="dbapId">Bölüm-Ders-Akademik Personel</label>
+                        <select class="form-control" id="dbapId" required>
+                            <option value="">Seçiniz</option>
+                            @foreach (var item in ViewData["DBAPDetail"] as IEnumerable<Entity.DTOs.DersBolumAkademikPersonelDTO>)
+                            {
+                                <option value="@item.Id">@item.BolumAd - @item.DersAd (@item.AkademikPersonelAd)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sinavTarihi">Sınav Tarihi</label>
+                        <input type="date" class="form-control" id="sinavTarihi" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sinavBaslangicSaati">Başlangıç Saati</label>
+                        <input type="time" class="form-control" id="sinavBaslangicSaati" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sinavBitisSaati">Bitiş Saati</label>
+                        <input type="time" class="form-control" id="sinavBitisSaati" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Derslikler ve Gözetmenler</label>
+                        <div id="derslikContainer">
+                            <div class="derslik-row mb-2">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <select class="form-control derslik-select" required>
+                                            <option value="">Derslik Seçiniz</option>
+                                            @foreach (var derslik in ViewData["Derslikler"] as IEnumerable<Entity.Concrete.Derslik>)
+                                            {
+                                                <option value="@derslik.Id">@derslik.Ad (Kapasite: @derslik.Kapasite)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-control gozetmen-select" required>
+                                            <option value="">Gözetmen Seçiniz</option>
+                                            @foreach (var personel in ViewData["AkademikPersoneller"] as IEnumerable<Entity.Concrete.AkademikPersonel>)
+                                            {
+                                                <option value="@personel.Id">@personel.Ad (@personel.Unvan)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addDerslik">Derslik Ekle</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="saveSinav">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Derslikler Modal -->
+<div class="modal fade" id="dersliklerModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Derslikler ve Gözetmenler</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Derslik</th>
+                            <th>Gözetmen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dersliklerTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
-    <!-- jQuery UI -->
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-    <!-- Select2 -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <!-- FullCalendar -->
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/tr.js'></script>
-    <!-- SheetJS -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
-
-    <!-- Takvim için gerekli verileri global değişkenlere aktar -->
     <script>
-        const INITIAL_DATA = {
-            derslikler: @Html.Raw(Json.Serialize(derslikler.Data)),
-            dbapDetail: @Html.Raw(Json.Serialize(dbap_detail.Data)),
-            sinavlar: @Html.Raw(Json.Serialize(sinavs.Data)),
-            akademikPersoneller: @Html.Raw(Json.Serialize(ViewData["AkademikPersoneller"]))
-        };
-
-        // Renk üretimi için yardımcı fonksiyonlar
-        const generateBolumColor = (bolumId) => {
-            const GOLDEN_RATIO = 0.618033988749895;
-            const hue = (bolumId * GOLDEN_RATIO * 360) % 360;
-            return `hsl(${hue}, 60%, 45%)`;
-        };
-
-        // Sayfa yüklendiğinde bölüm renklerini uygula
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.external-event').forEach(event => {
-                const bolumId = event.dataset.bolumId;
-                event.style.backgroundColor = generateBolumColor(bolumId);
-            });
-
-            // İlk bölümü açık bırak, diğerlerini kapat
-            const bolumGruplar = document.querySelectorAll('.bolum-grup');
-            bolumGruplar.forEach((grup, index) => {
-                if (index !== 0) {
-                    const baslik = grup.querySelector('.bolum-baslik');
-                    const dersler = grup.querySelector('.bolum-dersler');
-                    baslik.classList.add('collapsed');
-                    dersler.classList.add('collapsed');
+        $(document).ready(function () {
+            // DataTable initialization
+            $('#sinavTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Turkish.json"
                 }
             });
-        });
 
-        function toggleDersler(element) {
-            const derslerDiv = element.nextElementSibling;
-            const icon = element.querySelector('.toggle-icon');
-            const isCollapsed = element.classList.contains('collapsed');
-            
-            // Toggle sınıfları
-            element.classList.toggle('collapsed');
-            derslerDiv.classList.toggle('collapsed');
+            // Derslik ekleme butonu
+            $('#addDerslik').click(function () {
+                var newRow = $('.derslik-row:first').clone();
+                newRow.find('select').val('');
+                newRow.find('.remove-derslik').remove();
+                newRow.append('<div class="col-md-12 mt-2"><button type="button" class="btn btn-danger btn-sm remove-derslik">Kaldır</button></div>');
+                $('#derslikContainer').append(newRow);
+            });
 
-            // Dersler açılırken animasyon ekle
-            if (!isCollapsed) {
-                // Kapanırken
-                derslerDiv.style.overflow = 'hidden';
-            } else {
-                // Açılırken
-                setTimeout(() => {
-                    derslerDiv.style.overflow = 'visible';
-                    // Her derse sırayla animasyon ekle
-                    const dersler = derslerDiv.querySelectorAll('.external-event');
-                    dersler.forEach((ders, index) => {
-                        ders.style.animationDelay = `${index * 0.1}s`;
+            // Derslik kaldırma
+            $(document).on('click', '.remove-derslik', function () {
+                $(this).closest('.derslik-row').remove();
+            });
+
+            // Yeni sınav ekleme
+            $('#saveSinav').click(function () {
+                var derslikler = [];
+                $('.derslik-row').each(function () {
+                    var derslikId = $(this).find('.derslik-select').val();
+                    var gozetmenId = $(this).find('.gozetmen-select').val();
+                    if (derslikId && gozetmenId) {
+                        derslikler.push({
+                            DerslikId: parseInt(derslikId),
+                            GozetmenId: parseInt(gozetmenId)
+                        });
+                    }
+                });
+
+                var sinav = {
+                    Id: $('#sinavId').val(),
+                    DerBolumAkademikPersonelId: $('#dbapId').val(),
+                    SinavTarihi: $('#sinavTarihi').val(),
+                    SinavBaslangicSaati: $('#sinavBaslangicSaati').val(),
+                    SinavBitisSaati: $('#sinavBitisSaati').val(),
+                    Derslikler: derslikler
+                };
+
+                var url = sinav.Id ? '/SinavDetay/Update' : '/SinavDetay/Add';
+                var method = sinav.Id ? 'PUT' : 'POST';
+
+                $.ajax({
+                    url: url,
+                    type: method,
+                    contentType: 'application/json',
+                    data: JSON.stringify(sinav),
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Hata: ' + response.message);
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Bir hata oluştu: ' + xhr.responseText);
+                    }
+                });
+            });
+
+            // Derslikleri görüntüleme
+            $('.view-derslikler').click(function () {
+                var id = $(this).data('id');
+                $.get('/SinavDetay/GetSinavDerslikler/' + id, function (response) {
+                    if (response.success) {
+                        var html = '';
+                        response.data.forEach(function (item) {
+                            html += '<tr><td>' + item.derslikAd + '</td><td>' + item.gozetmenAd + '</td></tr>';
+                        });
+                        $('#dersliklerTableBody').html(html);
+                        $('#dersliklerModal').modal('show');
+                    } else {
+                        alert('Hata: ' + response.message);
+                    }
+                });
+            });
+
+            // Sınav düzenleme
+            $('.edit-sinav').click(function () {
+                var id = $(this).data('id');
+                $.get('/SinavDetay/GetById/' + id, function (sinav) {
+                    $('#sinavId').val(sinav.id);
+                    $('#dbapId').val(sinav.derBolumAkademikPersonelId);
+                    $('#sinavTarihi').val(sinav.sinavTarihi.split('T')[0]);
+                    $('#sinavBaslangicSaati').val(sinav.sinavBaslangicSaati);
+                    $('#sinavBitisSaati').val(sinav.sinavBitisSaati);
+
+                    // Derslikleri temizle
+                    $('#derslikContainer').empty();
+
+                    // Derslikleri ekle
+                    $.get('/SinavDetay/GetSinavDerslikler/' + id, function (response) {
+                        if (response.success) {
+                            response.data.forEach(function (item) {
+                                var newRow = $('.derslik-row:first').clone();
+                                newRow.find('.derslik-select').val(item.derslikId);
+                                newRow.find('.gozetmen-select').val(item.gozetmenId);
+                                newRow.find('.remove-derslik').remove();
+                                newRow.append('<div class="col-md-12 mt-2"><button type="button" class="btn btn-danger btn-sm remove-derslik">Kaldır</button></div>');
+                                $('#derslikContainer').append(newRow);
+                            });
+                        }
                     });
-                }, 50);
-            }
-        }
-    </script>
 
-    <!-- Takvim yönetimi için özel JavaScript -->
-    <script src="~/js/sinavTakvimi.js"></script>
+                    $('#sinavModal').modal('show');
+                });
+            });
+
+            // Sınav silme
+            $('.delete-sinav').click(function () {
+                if (confirm('Bu sınavı silmek istediğinizden emin misiniz?')) {
+                    var id = $(this).data('id');
+                    $.ajax({
+                        url: '/SinavDetay/Delete',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ Id: id }),
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                alert('Hata: ' + response.message);
+                            }
+                        },
+                        error: function (xhr) {
+                            alert('Bir hata oluştu: ' + xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            // Modal kapandığında formu temizle
+            $('#sinavModal').on('hidden.bs.modal', function () {
+                $('#sinavForm')[0].reset();
+                $('#sinavId').val('');
+                $('#derslikContainer').empty();
+                var newRow = $('.derslik-row:first').clone();
+                newRow.find('select').val('');
+                newRow.find('.remove-derslik').remove();
+                $('#derslikContainer').append(newRow);
+            });
+        });
+    </script>
 }

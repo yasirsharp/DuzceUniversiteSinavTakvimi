@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@sweetalert2/theme-bootstrap-4/bootstrap-4.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Frontend1.styles.css" asp-append-version="true" />
     
@@ -26,7 +27,7 @@
         <!-- Sidebar -->
         <nav class="sidebar" id="sidebar">
             <a class="navbar-brand" href="/">
-                <i class="bi bi-calendar-check me-2"></i>
+                <i class="bi bi-calendar-check"></i>
                 Sınav Yönetimi
             </a>
             <ul class="nav flex-column mt-3">
@@ -77,13 +78,6 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "SinavDerslik" ? "active" : "")"
-                                   asp-controller="SinavDerslik" asp-action="Index">
-                                    <i class="bi bi-door-open"></i>
-                                    Sınav Derslik Yönetimi
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "BolumDersAkademikPersonel" ? "active" : "")"
                                    asp-controller="BolumDersAkademikPersonel" asp-action="index">
                                     <i class="bi bi-link-45deg"></i>
@@ -115,6 +109,15 @@
                     </div>
                 </li>
             </ul>
+            
+            <!-- Footer -->
+            <div class="sidebar-footer">
+                <div class="footer-content">
+                    Developed by <a href="https://github.com/yasirsharp" target="_blank" class="footer-link">~yasirsharp</a>
+                    <br>
+                    <a href="https://github.com/yasirsharp/DuzceUniversiteSinavTakvimi" target="_blank" class="footer-link">GitHub Repository</a>
+                </div>
+            </div>
         </nav>
 
         <!-- Overlay -->
@@ -160,7 +163,7 @@
                 </div>
             </nav>
 
-            <div class="container-fluid px-4">
+            <div class="container-fluid px-4 py-3">
                 @RenderBody()
             </div>
         </div>
@@ -170,12 +173,13 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-
             const sidebar = document.getElementById('sidebar');
             const content = document.getElementById('content');
             const sidebarCollapse = document.getElementById('sidebarCollapse');
@@ -328,8 +332,6 @@
             return `${fullName} (${roles})`;
         }
 
-
-
         // Sayfa yüklendiğinde kullanıcı bilgilerini güncelle
         document.addEventListener('DOMContentLoaded', function() {
             const userNameElement = document.getElementById('userName');
@@ -351,7 +353,7 @@
 </body>
 </html>
 
-<style>
+<!--<style>
 .footer {
     position: fixed;
     bottom: 0;
@@ -451,4 +453,37 @@
 .logout-btn:hover {
     background-color: #fff5f5 !important;
 }
+
+/* Sidebar Footer */
+.sidebar-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.sidebar-footer .footer-content {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.sidebar-footer .footer-link {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.sidebar-footer .footer-link:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+/* Ana içerik için padding ekliyoruz */
+.content {
+    padding-bottom: 1rem;
+}
 </style>
+-->

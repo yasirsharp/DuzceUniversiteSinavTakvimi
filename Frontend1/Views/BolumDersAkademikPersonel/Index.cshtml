@@ -2,7 +2,7 @@
 @using Entity.Concrete
 @using Entity.DTOs
 @{
-    ViewData["Title"] = "Bolum Ders AkademikPersonel Eşleşmesi";
+    ViewData["Title"] = "Bölüm-Ders-Akademik Personel Yönetimi";
     var bolumler = ViewData["Bolumler"] as IDataResult<List<Bolum>>;
     var dersler = ViewData["Dersler"] as IDataResult<List<Ders>>;
     var akademikPersoneller = ViewData["APler"] as IDataResult<List<AkademikPersonel>>;
@@ -78,89 +78,23 @@
     }
 </style>
 
-<div class="container-fluid mt-4">
+<div class="container-fluid">
     <div class="row">
-        <!-- Sol kısım -->
-        <div class="col-4 border-end">
-            <!-- Bölüm Tablosu -->
-            <div class="mb-4">
-                <h5>Bölüm Tablosu</h5>
-                <div class="table-container">
-                    <table class="table table-bordered" id="bolumTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Id</th>
-                                <th>Ad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var bolum in bolumler.Data)
-                            {
-                                <tr data-type="bolum">
-                                    <td>@bolum.Id</td>
-                                    <td>@bolum.Ad</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Bölüm-Ders-Akademik Personel Listesi</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#bdapModal">
+                            Yeni Eşleştirme Ekle
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <!-- Ders Tablosu -->
-            <div class="mb-4">
-                <h5>Ders Tablosu</h5>
-                <div class="table-container">
-                    <table class="table table-bordered" id="dersTable">
-                        <thead class="table-light">
+                <div class="card-body">
+                    <table id="bdapTable" class="table table-bordered table-striped">
+                        <thead>
                             <tr>
-                                <th>Id</th>
-                                <th>Ad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var ders in dersler.Data)
-                            {
-                                <tr data-type="ders">
-                                    <td>@ders.Id</td>
-                                    <td>@ders.Ad</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <!-- Akademik Personel Tablosu -->
-            <div>
-                <h5>Akademik Personel Tablosu</h5>
-                <div class="table-container">
-                    <table class="table table-bordered" id="personelTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Id</th>
-                                <th>Ad</th>
-                                <th>Unvan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var aPersonel in akademikPersoneller.Data)
-                            {
-                                <tr data-type="akademikPersonel">
-                                    <td>@aPersonel.Id</td>
-                                    <td>@aPersonel.Ad</td>
-                                    <td>@aPersonel.Unvan</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <!-- Sağ kısım -->
-        <div class="col-8">
-            <div class="right-table">
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
+                                <th>ID</th>
                                 <th>Bölüm</th>
                                 <th>Ders</th>
                                 <th>Akademik Personel</th>
@@ -168,22 +102,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr id="singleRow" style="display: none;">
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td>
-                                    <button id="saveButton" class="btn btn-primary btn-sm" disabled>Kaydet</button>
-                                </td>
-                            </tr>
-                            @foreach (var item in bolumDersAkademikPersonelEslestirmeleri.Data)
+                            @foreach (var item in ViewData["BDAP"] as IEnumerable<Entity.DTOs.DersBolumAkademikPersonelDTO>)
                             {
                                 <tr>
+                                    <td>@item.Id</td>
                                     <td>@item.BolumAd</td>
                                     <td>@item.DersAd</td>
-                                    <td>@item.AkademikPersonelAd</td>
+                                    <td>@item.AkademikPersonelAd (@item.Unvan)</td>
                                     <td>
-                                        <button class="btn btn-danger btn-sm">Sil</button>
+                                        <button class="btn btn-sm btn-info edit-bdap" data-id="@item.Id">Düzenle</button>
+                                        <button class="btn btn-sm btn-danger delete-bdap" data-id="@item.Id">Sil</button>
                                     </td>
                                 </tr>
                             }
@@ -195,4 +123,139 @@
     </div>
 </div>
 
-<script src="~/js/component-bdap.js"></script>
+<!-- BDAP Modal -->
+<div class="modal fade" id="bdapModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bölüm-Ders-Akademik Personel Eşleştirme</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="bdapForm">
+                    <input type="hidden" id="bdapId" />
+                    <div class="form-group">
+                        <label for="bolumId">Bölüm</label>
+                        <select class="form-control" id="bolumId" required>
+                            <option value="">Bölüm Seçiniz</option>
+                            @foreach (var bolum in ViewData["Bolumler"] as IEnumerable<Entity.Concrete.Bolum>)
+                            {
+                                <option value="@bolum.Id">@bolum.Ad</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dersId">Ders</label>
+                        <select class="form-control" id="dersId" required>
+                            <option value="">Ders Seçiniz</option>
+                            @foreach (var ders in ViewData["Dersler"] as IEnumerable<Entity.Concrete.Ders>)
+                            {
+                                <option value="@ders.Id">@ders.Ad</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="akademikPersonelId">Akademik Personel</label>
+                        <select class="form-control" id="akademikPersonelId" required>
+                            <option value="">Akademik Personel Seçiniz</option>
+                            @foreach (var personel in ViewData["APler"] as IEnumerable<Entity.Concrete.AkademikPersonel>)
+                            {
+                                <option value="@personel.Id">@personel.Ad (@personel.Unvan)</option>
+                            }
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="saveBdap">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // DataTable initialization
+            $('#bdapTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Turkish.json"
+                }
+            });
+
+            // Yeni BDAP ekleme
+            $('#saveBdap').click(function () {
+                var bdap = {
+                    Id: $('#bdapId').val(),
+                    BolumId: $('#bolumId').val(),
+                    DersId: $('#dersId').val(),
+                    AkademikPersonelId: $('#akademikPersonelId').val()
+                };
+
+                var url = bdap.Id ? '/BolumDersAkademikPersonel/Update' : '/BolumDersAkademikPersonel/Add';
+                var method = bdap.Id ? 'PUT' : 'POST';
+
+                $.ajax({
+                    url: url,
+                    type: method,
+                    contentType: 'application/json',
+                    data: JSON.stringify(bdap),
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Hata: ' + response.message);
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Bir hata oluştu: ' + xhr.responseText);
+                    }
+                });
+            });
+
+            // BDAP düzenleme
+            $('.edit-bdap').click(function () {
+                var id = $(this).data('id');
+                $.get('/BolumDersAkademikPersonel/GetDetail/' + id, function (bdap) {
+                    $('#bdapId').val(bdap.id);
+                    $('#bolumId').val(bdap.bolumId);
+                    $('#dersId').val(bdap.dersId);
+                    $('#akademikPersonelId').val(bdap.akademikPersonelId);
+                    $('#bdapModal').modal('show');
+                });
+            });
+
+            // BDAP silme
+            $('.delete-bdap').click(function () {
+                if (confirm('Bu eşleştirmeyi silmek istediğinizden emin misiniz?')) {
+                    var id = $(this).data('id');
+                    $.ajax({
+                        url: '/BolumDersAkademikPersonel/Delete',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ Id: id }),
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                alert('Hata: ' + response.message);
+                            }
+                        },
+                        error: function (xhr) {
+                            alert('Bir hata oluştu: ' + xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            // Modal kapandığında formu temizle
+            $('#bdapModal').on('hidden.bs.modal', function () {
+                $('#bdapForm')[0].reset();
+                $('#bdapId').val('');
+            });
+        });
+    </script>
+}

@@ -42,7 +42,7 @@ namespace Frontend1.Controllers
         {
             var result = _akademikPersonelService.Delete(akademikPersonel);
             if (result.Success) 
-                return Ok(new { success = true, message = result.Message });
+                return Ok(result);
 
             return BadRequest(new { success = false, message = result.Message });
         }
@@ -54,7 +54,17 @@ namespace Frontend1.Controllers
             {
                 return BadRequest(new { message = result.Message });
             }
-            return Ok();
+            return Ok(result);
+        }
+        [HttpGet]
+        public IActionResult GetById(int id)
+        {
+            var ders = _akademikPersonelService.GetById(id);
+            if (ders.Data != null)
+            {
+                return Ok(ders); // Ders nesnesini JSON olarak döner
+            }
+            return NotFound();
         }
     }
 }

@@ -60,5 +60,16 @@ namespace Frontend1.Controllers
             }
             return Ok(result); // Başarılı yanıt
         }
+        [HttpGet]
+        [Route("Bolum/GetById/{id}")]
+        public IActionResult GetById(int id)
+        {
+            var bolum = _bolumService.GetById(id);
+            if (bolum.Success)
+            {
+                return Ok(bolum); // Bolum nesnesini JSON olarak döner
+            }
+            return BadRequest(new { message = bolum.Message });
+        }
     }
 }

@@ -6,16 +6,19 @@ using Entity.Concrete;
 using System.Linq.Expressions;
 using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Business.Concrete
 {
     public class AkademikPersonelManager : IAkademikPersonelService
     {
         private readonly IAkademikPersonelDal _akademikPersonelDal;
+        IDBAPDal _dBAPDal;
 
-        public AkademikPersonelManager(IAkademikPersonelDal akademikPersonelDal)
+        public AkademikPersonelManager(IAkademikPersonelDal akademikPersonelDal, IDBAPDal dBAPDal)
         {
             _akademikPersonelDal = akademikPersonelDal;
+            _dBAPDal = dBAPDal;
         }
 
         public IResult Add(AkademikPersonel akademikPersonel)
@@ -26,6 +29,16 @@ namespace Business.Concrete
 
         public IResult Delete(AkademikPersonel akademikPersonel)
         {
+            var dbap = _dBAPDal.GetDetails(q => q.AkademikPersonelId == akademikPersonel.Id);
+            if (dbap.Count > 0)
+            {
+                string message = $"{akademikPersonel.Ad} için {dbap.Count} tane Bölüm-Ders-Akademik Personel Eşleştirmesi bulunmaktadır.\n";
+                foreach (var item in dbap)
+                {
+                    message += $"{item.BolumAd} {item.DersAd} {item.AkademikPersonelAd} {item.Unvan}\n";
+                }
+                return new ErrorResult(message);
+            }
             _akademikPersonelDal.DeleteAkademikPersonelWithUserOperationClaim(akademikPersonel);
             return new SuccessResult(Messages.AkademikPersonelDeleted);
         }
