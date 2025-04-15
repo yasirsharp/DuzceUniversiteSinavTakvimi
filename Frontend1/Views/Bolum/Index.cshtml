@@ -133,10 +133,11 @@
                     contentType: 'application/json',
                     data: JSON.stringify(bolum),
                     success: function (response) {
-                        if (response.success) {
+                        console.log(response);
+                        if (response.Success) {
                             Swal.fire({
                                 title: 'Başarılı!',
-                                text: response.message,
+                                text: response.Message,
                                 icon: 'success',
                                 timer: 1500,
                                 showConfirmButton: false
@@ -146,7 +147,7 @@
                         } else {
                             Swal.fire({
                                 title: 'Hata!',
-                                text: response.message,
+                                text: response.Message,
                                 icon: 'error'
                             });
                         }
@@ -173,18 +174,18 @@
                         type: 'GET',
                         success: function(response) {
                             console.log("Gelen bölüm verisi:", response);
-                            if (response.success) {
-                                var bolum = response.data;
+                            if (response.Success) {
+                                var bolum = response.Data;
                                 console.log("Gelen bölüm verisi:", bolum);
-                                document.getElementById('bolumId').value = bolum.id;
-                                document.getElementById('bolumAd').value = bolum.ad;
+                                document.getElementById('bolumId').value = bolum.Id;
+                                document.getElementById('bolumAd').value = bolum.Ad;
                                 
                                 var modal = new bootstrap.Modal(document.getElementById('bolumModal'));
                                 modal.show();
                             } else {
                                 Swal.fire({
                                     title: 'Hata!',
-                                    text: response.message,
+                                    text: response.Message,
                                     icon: 'error'
                                 });
                             }
@@ -223,10 +224,10 @@
                                 contentType: 'application/json',
                                 data: JSON.stringify({ Id: id }),
                                 success: function (response) {
-                                    if (response.success) {
+                                    if (response.Success) {
                                         Swal.fire({
                                             title: 'Başarılı!',
-                                            text: response.message,
+                                            text: response.Message,
                                             icon: 'success',
                                             timer: 1500,
                                             showConfirmButton: false
@@ -236,7 +237,7 @@
                                     } else {
                                         Swal.fire({
                                             title: 'Hata!',
-                                            text: response.message,
+                                            text: response.Message,
                                             icon: 'error'
                                         });
                                     }

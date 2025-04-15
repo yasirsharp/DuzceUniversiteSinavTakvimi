@@ -3,7 +3,7 @@ using Business.Abstract;
 using Entity.Concrete;
 using Core.Utilities.Results;
 using Entity.DTOs;
-using System.Linq;
+using System.Text.Json;
 
 namespace Frontend1.Controllers
 {
@@ -12,157 +12,214 @@ namespace Frontend1.Controllers
         private readonly ISinavDetayService _sinavDetayService;
         private readonly IDBAPService _dBAPService;
         private readonly IDerslikService _derslikService;
-        private readonly ISinavDerslikService _sinavDerslikService;
         private readonly IAkademikPersonelService _akademikPersonelService;
 
         public SinavDetayController(
             ISinavDetayService sinavDetayService, 
             IDBAPService dBAPService, 
             IDerslikService derslikService,
-            ISinavDerslikService sinavDerslikService,
             IAkademikPersonelService akademikPersonelService)
         {
             _sinavDetayService = sinavDetayService;
             _dBAPService = dBAPService;
             _derslikService = derslikService;
-            _sinavDerslikService = sinavDerslikService;
             _akademikPersonelService = akademikPersonelService;
         }
 
+        [HttpGet]
+        [Route("/sinavdetay/{bolumId?}")]
         public IActionResult Index(int? bolumId)
         {
-            ViewData["DBAP"] = _dBAPService.GetAll();
-            ViewData["DBAPDetail"] = _dBAPService.GetAllDetails();
-            ViewData["Derslikler"] = _derslikService.GetList();
-            ViewData["AkademikPersoneller"] = _akademikPersonelService.GetList();
-            
-            if (bolumId.HasValue)
+            try
             {
-                ViewData["SeciliBolumId"] = bolumId.Value;
-                var bolumSinavlari = _sinavDetayService.GetByBolumId(bolumId.Value);
-                ViewData["BolumSinavlari"] = bolumSinavlari.Data;
+                ViewData["DBAP"] = _dBAPService.GetByBolumId(bolumId ?? 0);
+                ViewData["DBAPDetail"] = _dBAPService.GetDetailsByBolumId(bolumId ?? 0);
+                ViewData["Derslikler"] = _derslikService.GetList();
+                ViewData["AkademikPersoneller"] = _akademikPersonelService.GetList();
+                
+                if (bolumId.HasValue)
+                {
+                    ViewData["SeciliBolumId"] = bolumId.Value;
+                    var bolumSinavlari = _sinavDetayService.GetByBolumId(bolumId.Value);
+                    ViewData["BolumSinavlari"] = bolumSinavlari.Data;
+                }
+                
+                return View();
             }
-            
-            return View();
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Sayfa yüklenirken bir hata oluştu: " + ex.Message });
+            }
         }
 
         [HttpGet]
         [Route("SinavDetay/GetEvents")]
         public IActionResult GetEvents(int? bolumId)
         {
-            IDataResult<List<SinavDetayDTO>> result;
-            
-            if (bolumId.HasValue)
+            try
             {
-                result = _sinavDetayService.GetByBolumId(bolumId.Value);
-            }
-            else
-            {
-                result = _sinavDetayService.GetAllDetails();
-            }
-
-            if (!result.Success)
-            {
-                return Json(new { success = false, message = result.Message });
-            }
-
-            var events = result.Data.Select(s => new
-            {
-                id = s.Id,
-                title = $"{s.DersAd} - {s.BolumAd}",
-                start = s.SinavTarihi.ToString("yyyy-MM-dd") + "T" + s.SinavBaslangicSaati.ToString("HH:mm"),
-                end = s.SinavTarihi.ToString("yyyy-MM-dd") + "T" + s.SinavBitisSaati.ToString("HH:mm"),
-                extendedProps = new
+                IDataResult<List<SinavDetayDTO>> result;
+                
+                if (bolumId.HasValue)
                 {
-                    derslikler = s.Derslikler,
-                    gozetmenler = s.Gozetmenler,
-                    bolumAd = s.BolumAd,
-                    dersAd = s.DersAd,
-                    akademikPersonelAd = s.AkademikPersonelAd
+                    result = _sinavDetayService.GetByBolumId(bolumId.Value);
                 }
-            });
+                else
+                {
+                    result = _sinavDetayService.GetAllDetails();
+                }
 
-            return Json(events);
+                if (!result.Success)
+                {
+                    return BadRequest(new { message = result.Message });
+                }
+
+                var events = result.Data.Select(s => new
+                {
+                    id = s.Id,
+                    title = $"{s.DersAd} - {s.BolumAd}",
+                    start = $"{s.SinavTarihi:yyyy-MM-dd}T{s.SinavBaslangicSaati:HH:mm}",
+                    end = $"{s.SinavTarihi:yyyy-MM-dd}T{s.SinavBitisSaati:HH:mm}",
+                    extendedProps = new
+                    {
+                        dbapId = s.DersBolumAkademikPersonelId,
+                        dersAd = s.DersAd,
+                        bolumAd = s.BolumAd,
+                        akademikPersonelAd = s.AkademikPersonelAd,
+                        derslikler = s.Derslikler ?? new List<DerslikGozetmenDTO>(),
+                        gozetmenler = s.Gozetmenler
+                    }
+                });
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Sınav bilgileri alınırken bir hata oluştu: " + ex.Message });
+            }
         }
 
         [HttpPost]
         [Route("SinavDetay/Add")]
-        public IActionResult Add([FromBody] SinavKayitDTO model)
+        public IActionResult Add([FromBody]SinavKayitDTO model)
         {
             try
             {
+                if (model == null)
+                {
+                    return BadRequest(new { success = false, message = "Gönderilen veri boş olamaz" });
+                }
+
+                // Model validasyonu
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    return BadRequest(new { success = false, message = "Geçersiz veri formatı", errors = errors });
+                }
+
+                // Gelen veriyi logla
+                System.Diagnostics.Debug.WriteLine($"Gelen veri: {JsonSerializer.Serialize(model)}");
+
+                // Zorunlu alan kontrolleri
+                if (model.DerBolumAkademikPersonelId <= 0)
+                {
+                    return BadRequest(new { success = false, message = "Geçersiz ders-bölüm-akademik personel ID'si" });
+                }
+
+                if (model.Derslikler == null || !model.Derslikler.Any())
+                {
+                    return BadRequest(new { success = false, message = "En az bir derslik seçilmelidir" });
+                }
+
+                // Tarih ve saat formatı kontrolü
+                if (!DateTime.TryParse(model.SinavTarihi.ToString(), out _))
+                {
+                    return BadRequest(new { success = false, message = "Geçersiz sınav tarihi formatı" });
+                }
+
+                if (!TimeOnly.TryParse(model.SinavBaslangicSaati, out _) || !TimeOnly.TryParse(model.SinavBitisSaati, out _))
+                {
+                    return BadRequest(new { success = false, message = "Geçersiz saat formatı" });
+                }
+
                 var result = _sinavDetayService.Add(model);
                 if (!result.Success)
                 {
-                    return Json(new { success = false, message = result.Message });
+                    return BadRequest(new { success = false, message = result.Message });
                 }
-                return Json(new { success = true, message = result.Message });
+
+                return Ok(new { success = true, message = "Sınav başarıyla eklendi" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "İşlem sırasında bir hata oluştu: " + ex.Message });
+                System.Diagnostics.Debug.WriteLine($"Hata: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+                return BadRequest(new { success = false, message = "Sınav eklenirken bir hata oluştu: " + ex.Message });
             }
         }
 
-        [HttpPost]
+        [HttpPut]
         [Route("SinavDetay/Update")]
         public IActionResult Update([FromBody] SinavGuncelleDTO model)
         {
             try
             {
-                if (model == null || model.Id <= 0)
+                if (model == null)
                 {
-                    return Json(new { success = false, message = "Geçersiz sınav verisi." });
+                    return BadRequest(new { success = false, message = "Gönderilen veri boş olamaz" });
                 }
 
-                // Mevcut derslik-gözetmen eşleştirmelerini sil
-                var mevcutDerslikler = _sinavDerslikService.GetBySinavDetayId(model.Id);
-                if (mevcutDerslikler.Success)
+                // Model validasyonu
+                if (!ModelState.IsValid)
                 {
-                    foreach (var derslik in mevcutDerslikler.Data)
-                    {
-                        _sinavDerslikService.Delete(derslik);
-                    }
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    return BadRequest(new { success = false, message = "Geçersiz veri formatı", errors = errors });
                 }
 
-                // Sınav detayını güncelle
-                var sinavDetay = new SinavDetay
-                {
-                    Id = model.Id,
-                    DerBolumAkademikPersonelId = model.DbapId,
-                    SinavTarihi = model.SinavTarihi,
-                    SinavBaslangicSaati = model.SinavBaslangicSaati,
-                    SinavBitisSaati = model.SinavBitisSaati
-                };
+                // Gelen veriyi logla
+                System.Diagnostics.Debug.WriteLine($"Güncelleme verisi: {JsonSerializer.Serialize(model)}");
 
-                var updateResult = _sinavDetayService.Update(sinavDetay);
-                if (!updateResult.Success)
+                // Zorunlu alan kontrolleri
+                if (model.Id <= 0)
                 {
-                    return Json(new { success = false, message = updateResult.Message });
+                    return BadRequest(new { success = false, message = "Geçersiz sınav ID'si" });
                 }
 
-                // Yeni derslik-gözetmen eşleştirmelerini ekle
-                foreach (var derslik in model.Derslikler)
+                if (model.DerBolumAkademikPersonelId <= 0)
                 {
-                    var sinavDerslik = new SinavDerslik
-                    {
-                        SinavDetayId = model.Id,
-                        DerslikId = derslik.DerslikId,
-                        GozetmenId = derslik.GozetmenId ?? 0
-                    };
-
-                    var derslikResult = _sinavDerslikService.Add(sinavDerslik);
-                    if (!derslikResult.Success)
-                    {
-                        return Json(new { success = false, message = derslikResult.Message });
-                    }
+                    return BadRequest(new { success = false, message = "Geçersiz ders-bölüm-akademik personel ID'si" });
                 }
 
-                return Json(new { success = true, message = "Sınav başarıyla güncellendi." });
+                if (model.Derslikler == null || !model.Derslikler.Any())
+                {
+                    return BadRequest(new { success = false, message = "En az bir derslik seçilmelidir" });
+                }
+
+                // Tarih ve saat formatı kontrolü
+                if (!DateTime.TryParse(model.SinavTarihi.ToString(), out _))
+                {
+                    return BadRequest(new { success = false, message = "Geçersiz sınav tarihi formatı" });
+                }
+
+                var result = _sinavDetayService.Update(model);
+                if (!result.Success)
+                {
+                    return BadRequest(new { success = false, message = result.Message });
+                }
+
+                return Ok(new { success = true, message = "Sınav başarıyla güncellendi" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Güncelleme sırasında bir hata oluştu: " + ex.Message });
+                System.Diagnostics.Debug.WriteLine($"Hata: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+                return BadRequest(new { success = false, message = "Sınav güncellenirken bir hata oluştu: " + ex.Message });
             }
         }
 
@@ -172,51 +229,52 @@ namespace Frontend1.Controllers
         {
             try
             {
-                var sinavDetay = new SinavDetay { Id = id };
-                var result = _sinavDetayService.Delete(sinavDetay);
-
-                if (!result.Success)
+                if (id <= 0)
                 {
-                    return Json(new { success = false, message = result.Message });
+                    return BadRequest(new { success = false, message = "Geçersiz sınav ID'si" });
                 }
 
-                return Json(new { success = true, message = "Sınav başarıyla silindi." });
+                // Gelen veriyi logla
+                System.Diagnostics.Debug.WriteLine($"Silinecek sınav ID: {id}");
+
+                var result = _sinavDetayService.Delete(new SinavDetay { Id = id });
+                if (!result.Success)
+                {
+                    return BadRequest(new { success = false, message = result.Message });
+                }
+
+                return Ok(new { success = true, message = "Sınav başarıyla silindi" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Silme işlemi sırasında bir hata oluştu: " + ex.Message });
+                System.Diagnostics.Debug.WriteLine($"Hata: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+                return BadRequest(new { success = false, message = "Sınav silinirken bir hata oluştu: " + ex.Message });
             }
         }
 
         [HttpGet]
-        [Route("SinavDetay/GetEventDetails/{id}")]
-        public IActionResult GetEventDetails(int id)
+        [Route("SinavDetay/GetById/{id}")]
+        public IActionResult GetById(int id)
         {
             try
             {
+                if (id <= 0)
+                {
+                    return BadRequest(new { message = "Geçersiz sınav ID'si" });
+                }
+
                 var result = _sinavDetayService.GetById(id);
                 if (!result.Success)
                 {
-                    return Json(new { success = false, message = result.Message });
+                    return BadRequest(new { message = result.Message });
                 }
 
-                var derslikler = _sinavDerslikService.GetBySinavDetayId(id);
-                if (!derslikler.Success)
-                {
-                    return Json(new { success = false, message = derslikler.Message });
-                }
-
-                return Json(new { 
-                    success = true, 
-                    data = new {
-                        sinavDetay = result.Data,
-                        derslikler = derslikler.Data
-                    }
-                });
+                return Ok(result.Data);
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Detaylar getirilirken bir hata oluştu: " + ex.Message });
+                return BadRequest(new { message = "Sınav bilgisi alınırken bir hata oluştu: " + ex.Message });
             }
         }
     }

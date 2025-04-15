@@ -4,11 +4,57 @@
 @using Microsoft.AspNetCore.Html
 @{
     ViewData["Title"] = "Sınav Takvimi";
+    var dbapDetails = ViewData["DBAPDetail"] as IDataResult<List<DersBolumAkademikPersonelDTO>>;
+    var derslikler = ViewData["Derslikler"] as IDataResult<List<Derslik>>;
+    var akademikPersoneller = ViewData["AkademikPersoneller"] as IDataResult<List<AkademikPersonel>>;
 }
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-12">
+        <!-- Sol Sidebar - Derslik ve Ders Listesi -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Derslikler</h5>
+                </div>
+                <div class="card-body">
+                    <select class="form-control select2" id="derslikSelect" multiple="multiple">
+                        @foreach (var item in derslikler.Data)
+                        {
+                            <option value="@item.Id">@item.Ad (Kapasite: @item.Kapasite)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ders Listesi</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="dersListesi">
+                        @foreach (var item in dbapDetails.Data)
+                        {
+                            <div class="list-group-item ders-item" 
+                                 draggable="true" 
+                                 data-dbap-id="@item.Id"
+                                 data-ders-ad="@item.DersAd"
+                                 data-bolum-ad="@item.BolumAd"
+                                 data-akademik-personel="@item.AkademikPersonelAd">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">@item.DersAd</h6>
+                                    <small class="text-muted">@item.BolumAd</small>
+                                    <small class="text-muted">@item.Id</small>
+                                </div>
+                                <p class="mb-1 small">@item.AkademikPersonelAd</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Taraf - Takvim -->
+        <div class="col-md-9">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Sınav Takvimi</h3>
@@ -43,7 +89,7 @@
                                 <label for="dbapId">Ders-Bölüm-Akademik Personel</label>
                                 <select class="form-control" id="dbapId" required>
                                     <option value="">Seçiniz</option>
-                                    @foreach (var item in ViewData["DBAPDetail"] as IEnumerable<Entity.DTOs.DersBolumAkademikPersonelDTO>)
+                                    @foreach (var item in dbapDetails.Data)
                                     {
                                         <option value="@item.Id">@item.DersAd - @item.BolumAd - @item.AkademikPersonelAd</option>
                                     }
@@ -81,16 +127,16 @@
                                             <div class="col-md-6">
                                                 <select class="form-control derslik-select" required>
                                                     <option value="">Derslik Seçiniz</option>
-                                                    @foreach (var item in ViewData["Derslikler"] as IEnumerable<Entity.Concrete.Derslik>)
+                                                    @foreach (var item in derslikler.Data)
                                                     {
-                                                        <option value="@item.Id">@item.Ad (Kapasite: @item.Kapasite)</option>
+                                                        <option value="@item.Id" data-kapasite="@item.Kapasite">@item.Ad (Kapasite: @item.Kapasite)</option>
                                                     }
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <select class="form-control gozetmen-select">
+                                                <select class="form-control gozetmen-select" data-derslik-id="">
                                                     <option value="">Gözetmen Seçiniz (Opsiyonel)</option>
-                                                    @foreach (var item in ViewData["AkademikPersoneller"] as IEnumerable<Entity.Concrete.AkademikPersonel>)
+                                                    @foreach (var item in akademikPersoneller.Data)
                                                     {
                                                         <option value="@item.Id">@item.Ad @item.Unvan</option>
                                                     }
@@ -115,241 +161,708 @@
     </div>
 </div>
 
+<!-- Sınav Detay Modal -->
+<div class="modal fade" id="sinavDetayModal" tabindex="-1" role="dialog" aria-labelledby="sinavDetayModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sinavDetayModalLabel">Sınav Detayları</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><strong>Ders:</strong> <span id="modalDersAd"></span></h6>
+                        <h6><strong>Bölüm:</strong> <span id="modalBolumAd"></span></h6>
+                        <h6><strong>Sınav Tarihi:</strong> <span id="modalSinavTarihi"></span></h6>
+                        <h6><strong>Sınav Saati:</strong> <span id="modalSinavSaati"></span></h6>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><strong>Akademik Personel:</strong> <span id="modalAkademikPersonel"></span></h6>
+                        <h6><strong>Derslikler:</strong></h6>
+                        <ul id="modalDerslikler" class="list-unstyled"></ul>
+                        <h6><strong>Gözetmenler:</strong></h6>
+                        <ul id="modalGozetmenler" class="list-unstyled"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fc-event {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .fc-event:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .fc-toolbar-title {
+        font-size: 1.5em;
+        color: #2c3e50;
+    }
+
+    .fc-button-primary {
+        background-color: #3498db !important;
+        border-color: #3498db !important;
+    }
+
+    .fc-button-primary:hover {
+        background-color: #2980b9 !important;
+        border-color: #2980b9 !important;
+    }
+
+    .fc-day-today {
+        background-color: rgba(52, 152, 219, 0.1) !important;
+    }
+
+    .fc-event-title {
+        font-weight: bold;
+    }
+
+    .fc-event-time {
+        font-size: 0.9em;
+    }
+
+    #calendar {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        padding: 20px;
+    }
+
+    .modal-content {
+        border-radius: 15px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+        border-radius: 0 0 15px 15px;
+    }
+
+    /* Ders Listesi Stilleri */
+    .ders-item {
+        cursor: move;
+        transition: all 0.3s ease;
+        border-left: 4px solid #3498db;
+        margin-bottom: 2px;
+    }
+
+    .ders-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .ders-item.dragging {
+        opacity: 0.5;
+        background-color: #e9ecef;
+    }
+
+    #dersListesi {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+
+    .list-group-item {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+</style>
+
 @section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@fullcalendar/interaction@6.1.10/index.global.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        // Global değişkenler
+        let derslikler = @Html.Raw(Json.Serialize(derslikler.Data.Select(d => new { id = d.Id, ad = d.Ad, kapasite = d.Kapasite })));
+        let akademikPersoneller = @Html.Raw(Json.Serialize(akademikPersoneller.Data.Select(ap => new { id = ap.Id, ad = ap.Ad, unvan = ap.Unvan })));
+        var seciliDers = null;
+
+        $(document).ready(function() {
+            // Select2 başlatma
+            $('#derslikSelect').select2({
+                placeholder: "Derslik seçiniz",
+                allowClear: true
+            });
+
             var calendarEl = document.getElementById('calendar');
             var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
+                initialView: 'timeGridWeek',
                 locale: 'tr',
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
-                events: '/SinavDetay/GetEvents',
-                eventClick: function(info) {
-                    showEventDetails(info.event);
+                buttonText: {
+                    today: 'Bugün',
+                    month: 'Ay',
+                    week: 'Hafta',
+                    day: 'Gün'
                 },
-                dateClick: function(info) {
-                    openModalForNewEvent(info.date);
+                editable: true,
+                droppable: true,
+                selectable: true,
+                selectMirror: true,
+                dayMaxEvents: true,
+                eventStartEditable: true,
+                eventDurationEditable: true,
+                slotMinTime: '08:00:00',
+                slotMaxTime: '18:00:00',
+                allDaySlot: false,
+                snapDuration: '00:05:00',
+                eventConstraint: {
+                    startTime: '08:00',
+                    endTime: '18:00',
+                    daysOfWeek: [1, 2, 3, 4, 5]
                 },
-                eventDrop: function(info) {
-                    updateEvent(info.event);
+                drop: function(info) {
+                    if (!seciliDers) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: 'Lütfen bir ders seçiniz.'
+                        });
+                        return;
+                    }
+
+                    var selectedDerslikler = $('#derslikSelect').val();
+                    if (!selectedDerslikler || selectedDerslikler.length === 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: 'Lütfen en az bir derslik seçiniz.'
+                        });
+                        return;
+                    }
+
+                    // Bırakılan tarihi al
+                    var dropDate = info.date;
+                    
+                    // Varsayılan sınav süresi (45 dakika)
+                    var endDate = new Date(dropDate);
+                    endDate.setMinutes(dropDate.getMinutes() + 45);
+
+                    // Eğer hafta sonu ise işlemi iptal et
+                    if (dropDate.getDay() === 0 || dropDate.getDay() === 6) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: 'Sınavlar sadece hafta içi günlerde planlanabilir.'
+                        });
+                        return;
+                    }
+
+                    // Eğer mesai saatleri dışında ise işlemi iptal et
+                    var hour = dropDate.getHours();
+                    if (hour < 8 || hour > 17) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: 'Sınavlar 08:00 - 18:00 saatleri arasında planlanabilir.'
+                        });
+                        return;
+                    }
+
+                    showSinavModal(info);
                 },
-                eventResize: function(info) {
-                    updateEvent(info.event);
+                eventReceive: function(info) {
+                    calendar.refetchEvents();
+                },
+                events: function(info, successCallback, failureCallback) {
+                    var bolumId = @(ViewData["SeciliBolumId"] ?? "null");
+                    var url = '/SinavDetay/GetEvents';
+                    if (bolumId) {
+                        url += '?bolumId=' + bolumId;
+                    }
+
+                    $.ajax({
+                        url: url,
+                        type: 'GET',
+                        success: function(response) {
+                            successCallback(response);
+                        },
+                        error: function() {
+                            failureCallback();
+                        }
+                    });
                 }
             });
             calendar.render();
 
-            // Derslik ekleme butonu
-            document.getElementById('addDerslik').addEventListener('click', function() {
-                var template = document.querySelector('.derslik-item').cloneNode(true);
-                var removeButton = document.createElement('button');
-                removeButton.type = 'button';
-                removeButton.className = 'btn btn-danger btn-sm mt-2';
-                removeButton.innerHTML = '<i class="fas fa-trash"></i> Sil';
-                removeButton.onclick = function() {
-                    template.remove();
-                };
-                template.appendChild(removeButton);
-                document.getElementById('derslikContainer').appendChild(template);
+            // Ders sürükleme işlemleri
+            const dersItems = document.querySelectorAll('.ders-item');
+            
+            dersItems.forEach(item => {
+                new FullCalendar.Draggable(item, {
+                    eventData: function() {
+                        seciliDers = {
+                            dbapId: item.dataset.dbapId,
+                            dersAd: item.dataset.dersAd,
+                            bolumAd: item.dataset.bolumAd,
+                            akademikPersonel: item.dataset.akademikPersonel
+                        };
+                        return {
+                            title: item.dataset.dersAd,
+                            duration: '00:45'
+                        };
+                    }
+                });
+
+                item.addEventListener('dragstart', function() {
+                    this.classList.add('dragging');
+                });
+
+                item.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
             });
 
-            // Modal kapatıldığında formu temizle
-            document.getElementById('sinavModal').addEventListener('hidden.bs.modal', function() {
-                document.getElementById('sinavForm').reset();
-                document.getElementById('sinavId').value = '';
-                var container = document.getElementById('derslikContainer');
-                while (container.children.length > 1) {
-                    container.removeChild(container.lastChild);
+            function showSinavModal(info) {
+                const derslikIds = $('#derslikSelect').val();
+                if (!derslikIds || derslikIds.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: 'Lütfen en az bir derslik seçiniz!'
+                    });
+                    return;
                 }
-            });
 
-            // Kaydet butonu
-            document.getElementById('saveSinav').addEventListener('click', function() {
-                var formData = getFormData();
-                if (!formData) return;
+                // Tarih formatlaması
+                const eventDate = info.date || new Date(info.dateStr);
+                const year = eventDate.getFullYear();
+                const month = String(eventDate.getMonth() + 1).padStart(2, '0');
+                const day = String(eventDate.getDate()).padStart(2, '0');
+                const sinavTarihi = `${year}-${month}-${day}`;
 
-                var url = formData.id ? '/SinavDetay/Update' : '/SinavDetay/Add';
-                var method = formData.id ? 'PUT' : 'POST';
+                // Saat formatlaması
+                let baslangicSaati, bitisSaati;
+                if (info.startStr) {
+                    baslangicSaati = info.startStr.split('T')[1].substring(0, 5);
+                    bitisSaati = info.endStr ? info.endStr.split('T')[1].substring(0, 5) : addMinutesToTime(baslangicSaati, 45);
+                } else {
+                    const currentHour = eventDate.getHours();
+                    baslangicSaati = `${String(currentHour).padStart(2, '0')}:00`;
+                    bitisSaati = addMinutesToTime(baslangicSaati, 45);
+                }
 
-                fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
+                document.getElementById('sinavTarihi').value = sinavTarihi;
+                document.getElementById('baslangicSaati').value = baslangicSaati;
+                document.getElementById('bitisSaati').value = bitisSaati;
+
+                // Tarih kontrolü
+                const secilenTarih = new Date(sinavTarihi);
+                const bugun = new Date();
+                bugun.setHours(0, 0, 0, 0);
+                secilenTarih.setHours(0, 0, 0, 0);
+
+                if (secilenTarih < bugun) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: 'Geçmiş bir tarihe sınav eklenemez!'
+                    });
+                    return;
+                }
+
+                // Hafta sonu kontrolü
+                const gun = secilenTarih.getDay();
+                if (gun === 0 || gun === 6) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: 'Hafta sonu sınav planlanamaz!'
+                    });
+                    return;
+                }
+
+                let dersliklerHtml = '';
+                derslikIds.forEach(derslikId => {
+                    const derslik = derslikler.find(d => d.id === parseInt(derslikId));
+                    if (derslik) {
+                        dersliklerHtml += `
+                            <div class="mb-3">
+                                <label class="form-label">${derslik.ad} (Kapasite: ${derslik.kapasite})</label>
+                                <select class="form-select gozetmen-select" data-derslik-id="${derslik.id}" required>
+                                    <option value="">Gözetmen Seçiniz</option>
+                                    ${akademikPersoneller.map(ap => `
+                                        <option value="${ap.id}">${ap.ad} ${ap.unvan}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                        `;
+                    }
+                });
+
+                Swal.fire({
+                    title: 'Sınav Detayları',
+                    html: `
+                        <div class="mb-3">
+                            <label class="form-label">Ders</label>
+                            <input type="text" class="form-control" value="${seciliDers.dersAd}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bölüm</label>
+                            <input type="text" class="form-control" value="${seciliDers.bolumAd}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tarih</label>
+                            <input type="date" class="form-control" id="sinavTarihi" value="${sinavTarihi}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Başlangıç Saati</label>
+                            <input type="time" class="form-control" id="baslangicSaati" value="${baslangicSaati}" required min="08:00" max="17:00">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bitiş Saati</label>
+                            <input type="time" class="form-control" id="bitisSaati" value="${bitisSaati}" required min="09:00" max="18:00">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Derslikler ve Gözetmenler</label>
+                            ${dersliklerHtml}
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Kaydet',
+                    cancelButtonText: 'İptal',
+                    preConfirm: () => {
+                        const sinavTarihi = document.getElementById('sinavTarihi').value;
+                        const baslangicSaati = document.getElementById('baslangicSaati').value;
+                        const bitisSaati = document.getElementById('bitisSaati').value;
+
+                        // Boş alan kontrolü
+                        if (!sinavTarihi || !baslangicSaati || !bitisSaati) {
+                            Swal.showValidationMessage('Lütfen tüm alanları doldurunuz!');
+                            return false;
+                        }
+
+                        // Saat kontrolü
+                        const baslangic = new Date(`${sinavTarihi}T${baslangicSaati}`);
+                        const bitis = new Date(`${sinavTarihi}T${bitisSaati}`);
+
+                        if (baslangic >= bitis) {
+                            Swal.showValidationMessage('Bitiş saati başlangıç saatinden sonra olmalıdır!');
+                            return false;
+                        }
+
+                        // Mesai saatleri kontrolü
+                        const baslangicSaat = parseInt(baslangicSaati.split(':')[0]);
+                        const bitisSaat = parseInt(bitisSaati.split(':')[0]);
+
+                        if (baslangicSaat < 8 || bitisSaat > 18) {
+                            Swal.showValidationMessage('Sınavlar 08:00 - 18:00 saatleri arasında planlanabilir!');
+                            return false;
+                        }
+
+                        // Derslik ve gözetmen verilerini topla
+                        const derslikler = [];
+                        document.querySelectorAll('.gozetmen-select').forEach(select => {
+                            const derslikId = parseInt(select.dataset.derslikId);
+                            const gozetmenId = select.value ? parseInt(select.value) : 0;
+                            
+                            if (derslikId) { // Sadece geçerli derslikId'leri ekle
+                                derslikler.push({
+                                    DerslikId: derslikId,
+                                    GozetmenId: gozetmenId
+                                });
+                            }
+                        });
+
+                        const model = {
+                            DerBolumAkademikPersonelId: parseInt(seciliDers.dbapId),
+                            SinavTarihi: sinavTarihi,
+                            SinavBaslangicSaati: baslangicSaati,
+                            SinavBitisSaati: bitisSaati,
+                            Derslikler: derslikler
+                        };
+
+                        
+
+                        console.log('Gönderilen veri:', model);
+                        console.log('Gönderilen veri JSON:', JSON.stringify(model));
+
+                        $.ajax({
+                            url: '/SinavDetay/Add',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(model),
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Başarılı',
+                                        text: 'Sınav başarıyla kaydedildi!'
+                                    });
+                                    calendar.refetchEvents();
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Hata',
+                                        text: response.message || 'Sınav kaydedilemedi!'
+                                    });
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Hata detayı:', xhr.responseText);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Hata',
+                                    text: 'Sınav kaydedilirken bir hata oluştu: ' + (xhr.responseJSON?.message || error)
+                                });
+                            }
+                        });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'Başarılı!',
-                            text: data.message
-                        });
-                        calendar.refetchEvents();
-                        bootstrap.Modal.getInstance(document.getElementById('sinavModal')).hide();
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Hata!',
-                            text: data.message
+                            title: 'Başarılı',
+                            text: 'Sınav başarıyla kaydedildi!'
                         });
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Hata!',
-                        text: 'Bir hata oluştu: ' + error.message
-                    });
+                });
+            }
+
+            // Yardımcı fonksiyon: Verilen saate dakika ekler
+            function addMinutesToTime(time, minutes) {
+                const [hours, mins] = time.split(':').map(Number);
+                const date = new Date();
+                date.setHours(hours, mins + minutes);
+                return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            }
+
+            // Event güncelleme işlemi için
+            calendar.on('eventClick', function(info) {
+                var event = info.event;
+                var extendedProps = event.extendedProps;
+
+                // Mevcut derslikleri ve gözetmenleri al
+                var derslikIds = extendedProps.derslikler.map(d => d.derslikId);
+                
+                // Event verilerini modal'a doldur
+                showUpdateModal({
+                    id: event.id,
+                    dbapId: extendedProps.dbapId,
+                    dersAd: extendedProps.dersAd,
+                    bolumAd: extendedProps.bolumAd,
+                    akademikPersonel: extendedProps.akademikPersonelAd,
+                    sinavTarihi: event.start,
+                    sinavBitisSaati: event.end,
+                    derslikler: extendedProps.derslikler
                 });
             });
 
-            function getFormData() {
-                var derslikler = [];
-                document.querySelectorAll('.derslik-item').forEach(function(item) {
-                    var derslikId = item.querySelector('.derslik-select').value;
-                    var gozetmenId = item.querySelector('.gozetmen-select').value;
-                    if (!derslikId) return;
-
-                    derslikler.push({
-                        derslikId: parseInt(derslikId),
-                        gozetmenId: gozetmenId ? parseInt(gozetmenId) : null
-                    });
-                });
-
-                if (derslikler.length === 0) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Hata!',
-                        text: 'En az bir derslik seçmelisiniz.'
-                    });
-                    return null;
-                }
-
-                return {
-                    id: document.getElementById('sinavId').value || 0,
-                    dbapId: parseInt(document.getElementById('dbapId').value),
-                    sinavTarihi: document.getElementById('sinavTarihi').value,
-                    sinavBaslangicSaati: document.getElementById('baslangicSaati').value,
-                    sinavBitisSaati: document.getElementById('bitisSaati').value,
-                    derslikler: derslikler
-                };
-            }
-
-            function showEventDetails(event) {
-                fetch(`/SinavDetay/GetEventDetails/${event.id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            var details = data.data;
-                            var content = `
-                                <h5>${details.sinavDetay.dersAd} - ${details.sinavDetay.bolumAd}</h5>
-                                <p><strong>Akademik Personel:</strong> ${details.sinavDetay.akademikPersonelAd}</p>
-                                <p><strong>Tarih:</strong> ${new Date(details.sinavDetay.sinavTarihi).toLocaleDateString('tr-TR')}</p>
-                                <p><strong>Saat:</strong> ${details.sinavDetay.sinavBaslangicSaati} - ${details.sinavDetay.sinavBitisSaati}</p>
-                                <h6>Derslikler:</h6>
-                                <ul>
-                            `;
-                            details.derslikler.forEach(derslik => {
-                                content += `<li>${derslik.derslikAd} (Gözetmen: ${derslik.gozetmenAd || 'Belirtilmemiş'})</li>`;
-                            });
-                            content += '</ul>';
-
-                            Swal.fire({
-                                title: 'Sınav Detayları',
-                                html: content,
-                                showCancelButton: true,
-                                confirmButtonText: 'Düzenle',
-                                cancelButtonText: 'Kapat'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    openModalForEdit(details);
-                                }
-                            });
-                        }
-                    });
-            }
-
-            function openModalForNewEvent(date) {
-                document.getElementById('sinavId').value = '';
-                document.getElementById('sinavTarihi').value = date.toISOString().split('T')[0];
-                document.getElementById('baslangicSaati').value = '09:00';
-                document.getElementById('bitisSaati').value = '10:00';
-                new bootstrap.Modal(document.getElementById('sinavModal')).show();
-            }
-
-            function openModalForEdit(details) {
-                document.getElementById('sinavId').value = details.sinavDetay.id;
-                document.getElementById('dbapId').value = details.sinavDetay.derBolumAkademikPersonelId;
-                document.getElementById('sinavTarihi').value = new Date(details.sinavDetay.sinavTarihi).toISOString().split('T')[0];
-                document.getElementById('baslangicSaati').value = details.sinavDetay.sinavBaslangicSaati;
-                document.getElementById('bitisSaati').value = details.sinavDetay.sinavBitisSaati;
-
-                // Derslikleri temizle ve yeniden oluştur
-                var container = document.getElementById('derslikContainer');
-                container.innerHTML = '';
-                details.derslikler.forEach((derslik, index) => {
-                    var template = document.querySelector('.derslik-item').cloneNode(true);
-                    template.querySelector('.derslik-select').value = derslik.derslikId;
-                    template.querySelector('.gozetmen-select').value = derslik.gozetmenId || '';
-                    
-                    if (index > 0) {
-                        var removeButton = document.createElement('button');
-                        removeButton.type = 'button';
-                        removeButton.className = 'btn btn-danger btn-sm mt-2';
-                        removeButton.innerHTML = '<i class="fas fa-trash"></i> Sil';
-                        removeButton.onclick = function() {
-                            template.remove();
-                        };
-                        template.appendChild(removeButton);
+            function showUpdateModal(event) {
+                // Derslik seçeneklerini oluştur
+                var dersliklerHtml = '';
+                event.derslikler.forEach(function(derslik) {
+                    var derslikData = derslikler.find(d => d.id === derslik.DerslikId);
+                    if (derslikData) {
+                        dersliklerHtml += `
+                            <div class="mb-3">
+                                <label class="form-label">${derslikData.ad} (Kapasite: ${derslikData.kapasite})</label>
+                                <select class="form-control gozetmen-select" data-derslik-id="${derslik.DerslikId}">
+                                    <option value="0">Gözetmen Seçiniz (Opsiyonel)</option>
+                                    ${akademikPersoneller.map(ap => 
+                                        `<option value="${ap.id}" ${ap.id === derslik.GozetmenId ? 'selected' : ''}>${ap.ad} ${ap.unvan}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                        `;
                     }
-                    
-                    container.appendChild(template);
                 });
 
-                new bootstrap.Modal(document.getElementById('sinavModal')).show();
-            }
+                // Tarih ve saat formatını ayarla
+                var formattedDate = event.sinavTarihi.toISOString().split('T')[0];
+                var formattedStartTime = event.sinavTarihi.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
+                var formattedEndTime = event.sinavBitisSaati.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-            function updateEvent(event) {
-                var formData = {
-                    id: event.id,
-                    dbapId: event.extendedProps.dbapId,
-                    sinavTarihi: event.start.toISOString().split('T')[0],
-                    sinavBaslangicSaati: event.start.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-                    sinavBitisSaati: event.end.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-                    derslikler: event.extendedProps.derslikler
-                };
-
-                fetch('/SinavDetay/Update', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Hata!',
-                            text: data.message
+                Swal.fire({
+                    title: 'Sınav Düzenle',
+                    html: `
+                        <div class="text-start">
+                            <input type="hidden" id="sinavId" value="${event.id}">
+                            <p><strong>Ders:</strong> ${event.dersAd}</p>
+                            <p><strong>Bölüm:</strong> ${event.bolumAd}</p>
+                            <p><strong>Akademik Personel:</strong> ${event.akademikPersonel}</p>
+                            <div class="form-group mt-3">
+                                <label for="sinavTarihi">Sınav Tarihi</label>
+                                <input type="date" class="form-control" id="sinavTarihi" value="${formattedDate}" required>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label for="baslangicSaati">Başlangıç Saati</label>
+                                <input type="time" class="form-control" id="baslangicSaati" value="${formattedStartTime}" required>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label for="bitisSaati">Bitiş Saati</label>
+                                <input type="time" class="form-control" id="bitisSaati" value="${formattedEndTime}" required>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Derslikler ve Gözetmenler:</h6>
+                                ${dersliklerHtml}
+                            </div>
+                        </div>
+                    `,
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: 'Güncelle',
+                    denyButtonText: 'Sil',
+                    cancelButtonText: 'İptal',
+                    showLoaderOnConfirm: true,
+                    preConfirm: () => {
+                        // Derslik ve gözetmen verilerini topla
+                        const derslikler = [];
+                        document.querySelectorAll('.gozetmen-select').forEach(select => {
+                            const derslikId = parseInt(select.dataset.derslikId);
+                            const gozetmenId = select.value ? parseInt(select.value) : 0;
+                            
+                            if (derslikId) {
+                                derslikler.push({
+                                    DerslikId: derslikId,
+                                    GozetmenId: gozetmenId
+                                });
+                            }
                         });
-                        event.revert();
+
+                        const updateModel = {
+                            Id: parseInt(document.getElementById('sinavId').value),
+                            DerBolumAkademikPersonelId: parseInt(event.dbapId),
+                            SinavTarihi: document.getElementById('sinavTarihi').value,
+                            SinavBaslangicSaati: document.getElementById('baslangicSaati').value,
+                            SinavBitisSaati: document.getElementById('bitisSaati').value,
+                            Derslikler: derslikler
+                        };
+
+                        // Model validasyonu
+                        if (!updateModel.DerBolumAkademikPersonelId) {
+                            Swal.showValidationMessage('Geçersiz ders-bölüm-akademik personel bilgisi');
+                            return false;
+                        }
+
+                        if (!updateModel.Derslikler || updateModel.Derslikler.length === 0) {
+                            Swal.showValidationMessage('En az bir derslik seçilmelidir');
+                            return false;
+                        }
+
+                        console.log('Güncelleme verisi:', updateModel);
+                        return updateModel;
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    event.revert();
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Güncelleme işlemi
+                        fetch('/SinavDetay/Update', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(result.value)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(err => Promise.reject(err));
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Başarılı!',
+                                text: data.message
+                            });
+                            calendar.refetchEvents();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Hata!',
+                                text: error.message || 'Güncelleme sırasında bir hata oluştu'
+                            });
+                        });
+                    } else if (result.isDenied) {
+                        // Silme işlemi
+                        Swal.fire({
+                            title: 'Emin misiniz?',
+                            text: "Bu sınav kaydını silmek istediğinize emin misiniz?",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Evet, Sil',
+                            cancelButtonText: 'İptal'
+                        }).then((deleteResult) => {
+                            if (deleteResult.isConfirmed) {
+                                fetch('/SinavDetay/Delete', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(event.id)
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        return response.json().then(err => Promise.reject(err));
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Başarılı!',
+                                        text: data.message
+                                    });
+                                    calendar.refetchEvents();
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Hata!',
+                                        text: error.message || 'Silme sırasında bir hata oluştu'
+                                    });
+                                });
+                            }
+                        });
+                    }
                 });
             }
+
+            // Derslik seçimi değiştiğinde
+            $(document).on('change', '.derslik-select', function() {
+                const derslikId = $(this).val();
+                const gozetmenSelect = $(this).closest('.row').find('.gozetmen-select');
+                gozetmenSelect.attr('data-derslik-id', derslikId);
+            });
         });
     </script>
 }

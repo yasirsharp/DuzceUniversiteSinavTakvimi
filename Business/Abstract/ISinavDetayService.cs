@@ -12,6 +12,6 @@ namespace Business.Abstract
         IDataResult<SinavDetayDTO> GetById(int sinavDetayId);
         IResult Add(SinavKayitDTO sinavKayitDTO);
         IResult Delete(SinavDetay sinavDetay);
-        IResult Update(SinavDetay sinavDetay);
+        IResult Update(SinavGuncelleDTO sinavGuncelleDTO);
     }
 }

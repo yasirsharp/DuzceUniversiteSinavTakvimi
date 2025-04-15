@@ -12,5 +12,7 @@ namespace DataAccess.Abstract
         SinavDetayDTO GetDetail(int sinavDetayId);
         SinavDetay ExistSinav(List<int> derslikIdleri, List<int> gozetmenIdleri, int akademikPersonelId, TimeOnly SinavBaslangicSaati, TimeOnly SinavBitisSaati, DateTime sinavTarihi);
         void AddWithTransaction(SinavKayitDTO sinavKayitDTO);
+        void UpdateWithTransaction(SinavGuncelleDTO sinavKayitDTO);
+        void DeleteWithTransaction(SinavDetay sinavDetay);
     }
 }

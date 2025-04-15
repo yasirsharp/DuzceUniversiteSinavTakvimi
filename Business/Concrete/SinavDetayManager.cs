@@ -29,9 +29,13 @@ namespace Business.Concrete
                 List<int> derslikIdleri = sinavKayitDTO.Derslikler.Select(d => d.DerslikId).ToList();
                 List<int> gozetmenIdleri = sinavKayitDTO.Derslikler.Where(d => d.GozetmenId.HasValue).Select(d => d.GozetmenId.Value).ToList();
 
+                // Saat dönüşümleri
+                TimeOnly baslangicSaati = TimeOnly.Parse(sinavKayitDTO.SinavBaslangicSaati);
+                TimeOnly bitisSaati = TimeOnly.Parse(sinavKayitDTO.SinavBitisSaati);
+
                 // Çakışma kontrolü
                 var result = _sinavDetayDal.ExistSinav(derslikIdleri, gozetmenIdleri, sinavKayitDTO.DerBolumAkademikPersonelId,
-                                                                      sinavKayitDTO.SinavBaslangicSaati, sinavKayitDTO.SinavBitisSaati, sinavKayitDTO.SinavTarihi);
+                                                                      baslangicSaati, bitisSaati, sinavKayitDTO.SinavTarihi);
 
                 if (result!=null)
                     return new ErrorResult("Derslik, gözetmen veya akademik personel için çakışan bir sınav bulunmaktadır. Lütfen kontrol ediniz.");
@@ -44,13 +48,28 @@ namespace Business.Concrete
             {
                 return new ErrorResult(err.Message);
             }
-
         }
 
         public IResult Delete(SinavDetay sinavDetay)
         {
-            _sinavDetayDal.Delete(sinavDetay);
-            return new SuccessResult(Messages.SinavDetayDeleted);
+            try
+            {
+                // Önce kaydın var olduğundan emin ol
+                var existingRecord = _sinavDetayDal.Get(s => s.Id == sinavDetay.Id);
+                if (existingRecord == null)
+                {
+                    return new ErrorResult("Güncellenecek sınav kaydı bulunamadı.");
+                }
+
+                // Güncellemeyi yap
+                _sinavDetayDal.DeleteWithTransaction(sinavDetay);
+
+                return new SuccessResult(Messages.SinavDetayDeleted);
+            }
+            catch (Exception err)
+            {
+                return new ErrorResult(err.Message);
+            }
         }
 
         public IDataResult<List<SinavDetay>> GetAll()
@@ -74,26 +93,19 @@ namespace Business.Concrete
             return new SuccessDataResult<SinavDetayDTO>(_sinavDetayDal.GetDetail(sinavDetayId));
         }
 
-        public IResult Update(SinavDetay sinavDetay)
+        public IResult Update(SinavGuncelleDTO sinavGuncelleDTO)
         {
             try
             {
                 // Önce kaydın var olduğundan emin ol
-                var existingRecord = _sinavDetayDal.Get(s => s.Id == sinavDetay.Id);
+                var existingRecord = _sinavDetayDal.Get(s => s.Id == sinavGuncelleDTO.Id);
                 if (existingRecord == null)
                 {
                     return new ErrorResult("Güncellenecek sınav kaydı bulunamadı.");
                 }
 
-                // Mevcut kaydın değerlerini güncelle
-                existingRecord.DerBolumAkademikPersonelId = sinavDetay.DerBolumAkademikPersonelId;
-                existingRecord.SinavTarihi = sinavDetay.SinavTarihi;
-                existingRecord.SinavBaslangicSaati = sinavDetay.SinavBaslangicSaati;
-                existingRecord.SinavBitisSaati= sinavDetay.SinavBitisSaati;
-                
-
                 // Güncellemeyi yap
-                _sinavDetayDal.Update(existingRecord);
+                _sinavDetayDal.UpdateWithTransaction(sinavGuncelleDTO);
 
                 return new SuccessResult(Messages.SinavDetayUpdated);
             }

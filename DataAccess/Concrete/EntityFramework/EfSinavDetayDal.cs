@@ -22,12 +22,16 @@ namespace DataAccess.Concrete.EntityFramework
                 {
                     try
                     {
+                        // Saat dönüşümleri
+                        TimeOnly baslangicSaati = TimeOnly.Parse(sinavKayitDTO.SinavBaslangicSaati);
+                        TimeOnly bitisSaati = TimeOnly.Parse(sinavKayitDTO.SinavBitisSaati);
+
                         SinavDetay sinavDetay = new SinavDetay
                         {
                             DerBolumAkademikPersonelId = sinavKayitDTO.DerBolumAkademikPersonelId,
                             SinavTarihi = sinavKayitDTO.SinavTarihi,
-                            SinavBaslangicSaati = sinavKayitDTO.SinavBaslangicSaati,
-                            SinavBitisSaati = sinavKayitDTO.SinavBitisSaati
+                            SinavBaslangicSaati = baslangicSaati,
+                            SinavBitisSaati = bitisSaati
                         };
                         context.SinavDetay.Add(sinavDetay);
                         context.SaveChanges();
@@ -55,7 +59,30 @@ namespace DataAccess.Concrete.EntityFramework
             }
         }
 
-
+        public void DeleteWithTransaction(SinavDetay sinavDetay)
+        {
+            using (DuzceUniversiteContext context = new DuzceUniversiteContext())
+            {
+                using (var transaction = context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        var sinavDerslikler = context.SinavDerslik.Where(x => x.SinavDetayId == sinavDetay.Id);
+                        context.SinavDerslik.RemoveRange(sinavDerslikler);
+                        
+                        context.SinavDetay.Remove(sinavDetay);
+                        context.SaveChanges();
+                        
+                        transaction.Commit();
+                    }
+                    catch (Exception err)
+                    {
+                        transaction.Rollback();
+                        throw err;
+                    }
+                }
+            }
+        }
         public SinavDetay ExistSinav(List<int> derslikIdleri, List<int> gozetmenIdleri, int akademikPersonelId, TimeOnly SinavBaslangicSaati, TimeOnly SinavBitisSaati, DateTime sinavTarihi)
         {
             using (DuzceUniversiteContext context = new DuzceUniversiteContext())
@@ -218,6 +245,49 @@ namespace DataAccess.Concrete.EntityFramework
                              };
 
                 return result.ToList();
+            }
+        }
+
+        public void UpdateWithTransaction(SinavGuncelleDTO sinavGuncelleDTO)
+        {
+            using (DuzceUniversiteContext context = new DuzceUniversiteContext())
+            {
+                using (var transaction = context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        var sinavDetay = context.SinavDetay.Find(sinavGuncelleDTO.Id);
+                        if (sinavDetay != null)
+                        {
+                            sinavDetay.DerBolumAkademikPersonelId = sinavGuncelleDTO.DerBolumAkademikPersonelId;
+                            sinavDetay.SinavTarihi = sinavGuncelleDTO.SinavTarihi;
+                            sinavDetay.SinavBaslangicSaati = sinavGuncelleDTO.SinavBaslangicSaati;
+                            sinavDetay.SinavBitisSaati = sinavGuncelleDTO.SinavBitisSaati;
+
+                            var existingSinavDerslikler = context.SinavDerslik.Where(x => x.SinavDetayId == sinavGuncelleDTO.Id);
+                            context.SinavDerslik.RemoveRange(existingSinavDerslikler);
+
+                            foreach (var derslik in sinavGuncelleDTO.Derslikler)
+                            {
+                                SinavDerslik sinavDerslik = new SinavDerslik
+                                {
+                                    SinavDetayId = sinavDetay.Id,
+                                    DerslikId = derslik.DerslikId,
+                                    GozetmenId = derslik.GozetmenId ?? 0
+                                };
+                                context.SinavDerslik.Add(sinavDerslik);
+                            }
+
+                            context.SaveChanges();
+                            transaction.Commit();
+                        }
+                    }
+                    catch (Exception err)
+                    {
+                        transaction.Rollback();
+                        throw err;
+                    }
+                }
             }
         }
     }
