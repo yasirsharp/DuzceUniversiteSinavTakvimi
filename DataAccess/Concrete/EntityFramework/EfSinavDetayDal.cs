@@ -243,7 +243,6 @@ namespace DataAccess.Concrete.EntityFramework
                                          (sd, ap) => ap)
                                      .ToList()
                              };
-
                 return result.ToList();
             }
         }

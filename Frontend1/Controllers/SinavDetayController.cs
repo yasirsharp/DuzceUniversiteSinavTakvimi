@@ -110,48 +110,13 @@ namespace Frontend1.Controllers
                     return BadRequest(new { success = false, message = "Gönderilen veri boş olamaz" });
                 }
 
-                // Model validasyonu
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList();
-                    return BadRequest(new { success = false, message = "Geçersiz veri formatı", errors = errors });
-                }
-
-                // Gelen veriyi logla
-                System.Diagnostics.Debug.WriteLine($"Gelen veri: {JsonSerializer.Serialize(model)}");
-
-                // Zorunlu alan kontrolleri
-                if (model.DerBolumAkademikPersonelId <= 0)
-                {
-                    return BadRequest(new { success = false, message = "Geçersiz ders-bölüm-akademik personel ID'si" });
-                }
-
-                if (model.Derslikler == null || !model.Derslikler.Any())
-                {
-                    return BadRequest(new { success = false, message = "En az bir derslik seçilmelidir" });
-                }
-
-                // Tarih ve saat formatı kontrolü
-                if (!DateTime.TryParse(model.SinavTarihi.ToString(), out _))
-                {
-                    return BadRequest(new { success = false, message = "Geçersiz sınav tarihi formatı" });
-                }
-
-                if (!TimeOnly.TryParse(model.SinavBaslangicSaati, out _) || !TimeOnly.TryParse(model.SinavBitisSaati, out _))
-                {
-                    return BadRequest(new { success = false, message = "Geçersiz saat formatı" });
-                }
-
                 var result = _sinavDetayService.Add(model);
                 if (!result.Success)
                 {
-                    return BadRequest(new { success = false, message = result.Message });
+                    return BadRequest(result);
                 }
 
-                return Ok(new { success = true, message = "Sınav başarıyla eklendi" });
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -172,54 +137,17 @@ namespace Frontend1.Controllers
                     return BadRequest(new { success = false, message = "Gönderilen veri boş olamaz" });
                 }
 
-                // Model validasyonu
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList();
-                    return BadRequest(new { success = false, message = "Geçersiz veri formatı", errors = errors });
-                }
-
-                // Gelen veriyi logla
-                System.Diagnostics.Debug.WriteLine($"Güncelleme verisi: {JsonSerializer.Serialize(model)}");
-
-                // Zorunlu alan kontrolleri
-                if (model.Id <= 0)
-                {
-                    return BadRequest(new { success = false, message = "Geçersiz sınav ID'si" });
-                }
-
-                if (model.DerBolumAkademikPersonelId <= 0)
-                {
-                    return BadRequest(new { success = false, message = "Geçersiz ders-bölüm-akademik personel ID'si" });
-                }
-
-                if (model.Derslikler == null || !model.Derslikler.Any())
-                {
-                    return BadRequest(new { success = false, message = "En az bir derslik seçilmelidir" });
-                }
-
-                // Tarih ve saat formatı kontrolü
-                if (!DateTime.TryParse(model.SinavTarihi.ToString(), out _))
-                {
-                    return BadRequest(new { success = false, message = "Geçersiz sınav tarihi formatı" });
-                }
-
                 var result = _sinavDetayService.Update(model);
                 if (!result.Success)
                 {
-                    return BadRequest(new { success = false, message = result.Message });
+                    return BadRequest(result);
                 }
 
-                return Ok(new { success = true, message = "Sınav başarıyla güncellendi" });
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Hata: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
-                return BadRequest(new { success = false, message = "Sınav güncellenirken bir hata oluştu: " + ex.Message });
+                return BadRequest(new { Success = false, Message = "Sınav güncellenirken bir hata oluştu: " + ex.Message });
             }
         }
 
@@ -231,7 +159,7 @@ namespace Frontend1.Controllers
             {
                 if (id <= 0)
                 {
-                    return BadRequest(new { success = false, message = "Geçersiz sınav ID'si" });
+                    return BadRequest(new { Success = false, Message = "Geçersiz sınav ID'si" });
                 }
 
                 // Gelen veriyi logla
@@ -240,16 +168,16 @@ namespace Frontend1.Controllers
                 var result = _sinavDetayService.Delete(new SinavDetay { Id = id });
                 if (!result.Success)
                 {
-                    return BadRequest(new { success = false, message = result.Message });
+                    return BadRequest(result);
                 }
 
-                return Ok(new { success = true, message = "Sınav başarıyla silindi" });
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Hata: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
-                return BadRequest(new { success = false, message = "Sınav silinirken bir hata oluştu: " + ex.Message });
+                return BadRequest(new { Success = false, Message = "Sınav silinirken bir hata oluştu: " + ex.Message });
             }
         }
 
